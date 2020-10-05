@@ -14,9 +14,8 @@ Scott Li (gli65@uclive.ac.nz), Sam Heslip (she119@uclive.ac.nz)
 29/09/2020
 
 # Run
-'''Bush
+```Bash
 0. Make
 1. Make program
 2. Make program
-'''
-
+```
