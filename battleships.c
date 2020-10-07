@@ -187,11 +187,22 @@ void roundTerm(int termNumber)
     strncpy(message_text, part_of_text, 6);
     message_text[6] = t_number;
     message_text[7] = 0;
+
     tinygl_text(message_text);
+    pacer_init (500);
+    button_init ();
+    int display = 1;
+    while(display)
+    {
+        pacer_wait();
+        tinygl_update();
+        if (button_pressed_p ()) { // there have some porblems I am not sure about that the button is right.
+            display = 0;
+        }
+    }
 
     free(message_text);
-
-
+    return 0;
 }
 
 int main(void)
