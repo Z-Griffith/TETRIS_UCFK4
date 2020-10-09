@@ -212,7 +212,7 @@ void roundTerm(int termNumber)
     free(message_text);
 }
 
-
+/* Moves the firing targetter around the grid */
 void moveTargetter(Targetter* targetter, tinygl_point_t direction)
 {
     tinygl_point_t newPosition = vectorAdd(targetter->pos, direction);
@@ -221,6 +221,7 @@ void moveTargetter(Targetter* targetter, tinygl_point_t direction)
     }
 }
 
+/*  Draws the firing targetter to the screen */
 void drawTargetter(Targetter* targetter)
 {
     /* TODO: Put a toggle so the targetter can flash with tick
@@ -228,12 +229,30 @@ void drawTargetter(Targetter* targetter)
      tinygl_draw_point(targetter->pos, 1);
 }
 
+/* Resets the targetter to defaults */
 void resetTargetter(Targetter* targetter)
 {
     targetter->pos = tinygl_point(DEFAULT_POS_X, DEFAULT_POS_Y);
     targetter->hasFired = false;
 }
 
+/* Encodes vector grid point into a char */
+char encodePointToChar(tinygl_point_t point)
+{
+    return ((BOTTOM_BOUND + 1) * point.y) + point.x;
+}
+
+/* Decodes char into grid point */
+tinygl_point_t decodeCharToPoint(char c)
+{
+    int x = c % (BOTTOM_BOUND+1);
+    int y = (c-x)/(BOTTOM_BOUND+1);
+    
+    return tinygl_point(x, y);
+}
+    
+
+/* Sends the current targetter position as a char to the other board */
 void launchMissile(Targetter* targetter)
 {
     /* TODO: Implement the send and recieve missile coords */

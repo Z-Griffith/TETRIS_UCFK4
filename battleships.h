@@ -124,4 +124,10 @@ void resetShip(Ship*);
 void resetBoard(Ship*, int);
 
 void moveTargetter(Targetter*, tinygl_point_t);
+
+/* Encodes vector grid point into a char */
+char encodePointToChar(tinygl_point_t);
+
+/* Decodes char into grid point */
+tinygl_point_t decodeCharToPoint(char c);
 #endif
