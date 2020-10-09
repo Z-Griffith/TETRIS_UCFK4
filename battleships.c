@@ -20,7 +20,7 @@
 
 /* Game state variables */
 static state_t gameState;
-static int playerNumber = 0;
+static bool playerOne = false;
 static int stateTick = 0;
 static Targetter* targetter;
 static Ship* currentShip;
@@ -136,7 +136,10 @@ void moveShip(Ship* ship, tinygl_point_t moveDirection)
 void drawShip(Ship* ship)
 {
     for (int i = 0; i < ship->nOffsets; i++) {
-        tinygl_draw_point(vectorAdd(ship->pos, ship->offsets[i]), 1);
+        // Only draw offset if not hit
+        if (ship->hitStatus[i] == false) {
+            tinygl_draw_point(vectorAdd(ship->pos, ship->offsets[i]), 1);
+        }
     }
 }
 
@@ -326,18 +329,31 @@ bool ir_connect(void)
     if (button_push_event_p(BUTTON1)) {
         // Set player 1
         ir_uart_putc(CONNECTION_CONFIRM);
-        playerNumber = 1;
+        playerOne = true;
         success = true;
     } else if (ir_uart_read_ready_p ()) {
         char recieved = ir_uart_getc();
         // Set player 2
         if (recieved == CONNECTION_CONFIRM) {
-            playerNumber = 2;
+            playerOne = false;
             success = true;
         }
     }
     return success;
 }
+
+/* Checks whether the current targetter pos is currently on a ship */
+void checkHit(void)
+{
+    for (int i = 0; i < nShips; i++) {
+        for (int j = 0; j < ships[i].nOffsets; j++) {
+            if (isEqual(targetter->pos, getGridPosition(ships + i, j))) {
+                ships[i].hitStatus[j] = true;
+            }
+        }
+    }
+}
+
 
 /* Initialises the UCFK4 system and modules */
 void initialiseSystem(void)
@@ -371,17 +387,21 @@ void changeState(state_t newState)
             
         case PLACE_SHIPS :
             tinygl_clear();
-            tinygl_text(" Place ships");
+            if (playerOne) {
+                tinygl_text("P-1 Place ships");
+            } else {
+                tinygl_text("P-2 Place ships");
+            }
             break;
             
         case MY_TURN :
             tinygl_clear();
-            tinygl_text(" My turn");
+            tinygl_text("Your turn!");
             break;
             
         case OPPONENT_TURN :
             tinygl_clear();
-            tinygl_text(" Opponents turn");
+            tinygl_text("Opponents turn!");
             break;
             
         case GAME_OVER :
@@ -434,9 +454,9 @@ static void taskGameRun (void)
 
             /* If all ships placed, start game */
             if (nShipsPlaced == nShips) {
-                if (playerNumber == 1) {
+                if (playerOne == true) {
                     changeState(MY_TURN);
-                } else {
+                } else if (playerOne == false) {
                     changeState(OPPONENT_TURN);
                 }
             }
@@ -453,11 +473,13 @@ static void taskGameRun (void)
             break;
         
         case OPPONENT_TURN :
+            
             /* TODO: Implement wait for oppenent turn
              * and recieve data */
-             if (ir_uart_read_ready_p ()) {
-                 char recieved = ir_uart_getc ();
-                 /* TODO: Implement message validity check? */
+             
+            if (ir_uart_read_ready_p ()) {
+                char recieved = ir_uart_getc ();
+                /* TODO: Implement message validity check? */
                  
                  /* TODO: Check ship hit */
                  
@@ -491,8 +513,8 @@ static void taskDisplay(void)
             break;
             
         case PLACE_SHIPS :
-            if (stateTick > 3000) {
-                stateTick = 5000;
+            if (stateTick > 5000) {
+                stateTick = 6000;
                 tinygl_clear();
                 drawBoard(ships, nShips);
             }

@@ -23,14 +23,13 @@ typedef enum state {
     PLACE_SHIPS,
     MY_TURN,
     OPPONENT_TURN, 
-    GAME_OVER
-    
-    } state_t;
+    GAME_OVER} state_t;
 
 
 /* Defines the Ship structure with ship parameters.
  * pos: Current grid position of the ships centre.
  * offsets: List of ship vertices relative to the ship's pos
+ * hitStatus: List of ship offset' status
  * nOffsets: Number of ship vertices
  * isActive: Is this ship being placed?
  * isAlive: Does this ship still have alive offsets?
@@ -48,6 +47,7 @@ typedef enum state {
 typedef struct Ship_t {
     tinygl_point_t pos;
     tinygl_point_t offsets[MAX_SHIP_OFFSETS];
+    bool hitStatus[MAX_SHIP_OFFSETS];
     int nOffsets;
     bool isActive;
     bool isAlive;
@@ -63,6 +63,7 @@ typedef struct Targetter_t {
 Ship L_ship = {
     .pos={1,1},
     .offsets={{1,1}, {1,0}, {0,0}},
+    .hitStatus = {false, false, false},
     .nOffsets = 3,
     .isActive = false,
     .isAlive = true,
@@ -72,6 +73,7 @@ Ship L_ship = {
 Ship I_ship = {
     .pos={1,1},
     .offsets={{-1,0}, {0,0}, {1,0}},
+    .hitStatus = {false, false, false},
     .nOffsets = 3,
     .isActive = false,
     .isAlive = true,
@@ -81,6 +83,7 @@ Ship I_ship = {
 Ship i_ship = {
     .pos={1,1},
     .offsets={{-1,0}, {0,0}},
+    .hitStatus = {false, false},
     .nOffsets = 2,
     .isActive = false,
     .isAlive = true,
@@ -90,6 +93,7 @@ Ship i_ship = {
 Ship o_ship = {
     .pos={1,1},
     .offsets={{0,0}},
+    .hitStatus = {false},
     .nOffsets = 1,
     .isActive = false,
     .isAlive = true,
@@ -99,7 +103,6 @@ Ship o_ship = {
 /* Game variables */
 static state_t gameState;
 static int playerNumber;
-static int boardID;
 
 
 /* Returns the vector addition of points a and b */
