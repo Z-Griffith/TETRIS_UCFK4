@@ -66,7 +66,7 @@ bool isWithinGrid(tinygl_point_t point)
     return (isWithinXLimits && isWithinYLimits);
 }
 
-/* Rotates a Ship 90 degrees */
+/* Rotates a Ship 90 degrees and shifts if Ship is then outside the grid*/
 void rotateShip(Ship* ship)
 {
     tinygl_point_t newOffset;
@@ -159,6 +159,7 @@ void drawBoard(Ship* ships, int nShips)
     }
 }
 
+/* Resets a ship to default parameters for game reset */
 void resetShip(Ship* ship) {
     ship->pos.x = DEFAULT_POS_X;
     ship->pos.y = DEFAULT_POS_Y;
@@ -166,6 +167,16 @@ void resetShip(Ship* ship) {
     ship->isAlive = false;
     ship->isActive = false;
 }
+
+
+/* Resets all ships to default parameters for game reset */
+void resetBoard(Ship* ships, int nShips) 
+{
+    for (int i = 0; i < nShips; i++) {
+        resetShip(ships + i);
+    }
+}
+
 
 /* Game Round Term Show on display round one two three*/
 void roundTerm(int termNumber)
@@ -214,7 +225,7 @@ int main(void)
 
     enum game_state state = PLACE_SHIPS;
 
-
+    /* Configure ships to use */
     Ship ships[] = {
         L_ship,
         I_ship,
@@ -271,7 +282,7 @@ int main(void)
                     rotateShip(currentShip);
                 }
 
-
+                /* If all ships placed, start game */
                 if (nShipsPlaced == nShips) {
                     state = GAME_RUN;
                 }
@@ -280,6 +291,14 @@ int main(void)
             case GAME_RUN :
                 /* TODO: */
                 drawBoard(ships, nShips);
+                
+                /* Test resets */
+                resetBoard(ships, nShips);
+                currentShip = &ships[0];
+                currentShip->isActive = 1;
+                nShipsPlaced = 0;
+                state = PLACE_SHIPS;
+                
                 break;
 
             case GAME_OVER:

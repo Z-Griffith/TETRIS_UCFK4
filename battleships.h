@@ -9,7 +9,6 @@
 #define TOP_BOUND 0
 #define BOTTOM_BOUND 4
 #define MAX_SHIP_OFFSETS 5
-#define MAX_SHIPS_ON_BOARD 10
 #define LOOP_RATE 300
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
@@ -64,16 +63,42 @@ Ship o_ship = {
     .isPlaced = false
 };
 
+/* Returns the vector addition of points a and b */
 tinygl_point_t vectorAdd(tinygl_point_t, tinygl_point_t);
+
+/* Returns the grid position of a Ship's offset given an offsetIndex */
 tinygl_point_t getGridPosition(Ship*, int); 
+
+/* Checks equality of two tingygl_points A and B */
 bool isEqual(tinygl_point_t, tinygl_point_t);
+
+/* Checks if point on the grid is vacant */
 bool isPointVacant(tinygl_point_t, Ship*, int);
+
+/* Checks whether a point is within the game grid or out of bounds */
 bool isWithinGrid(tinygl_point_t point);
+
+/* Rotates a Ship 90 degrees and shifts if Ship is then outside the grid*/
 void rotateShip(Ship*);
+
+/* Moves a Ship across the grid in a given direction if possible */
 void moveShip(Ship*, tinygl_point_t);
+
+/* Draws a Ship to the LED matrix */
 void drawShip(Ship*);
+
+/* Attempts to place a Ship at it's current position, returns
+ * whether placement was successful or not. */
 bool placeShip(Ship*, Ship*, int);
-void drawGameBoard(Ship*, int);
+
+/* Draws placed and active ships to the LED matrix */
+void drawBoard(Ship*, int);
+
+/* Resets a ship to default parameters for game reset */
+void resetShip(Ship*);
+
+/* Resets all ships to default parameters for game reset */
+void resetBoard(Ship*, int);
 
 
 #endif
