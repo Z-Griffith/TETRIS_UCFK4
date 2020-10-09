@@ -9,13 +9,18 @@
 #define TOP_BOUND 0
 #define BOTTOM_BOUND 4
 #define MAX_SHIP_OFFSETS 5
-#define LOOP_RATE 300
+#define MESSAGE_RATE 20
+#define LOOP_RATE 600
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
 #define TICK_SPEED 2
 
 
-enum game_state{WAIT_FOR_CONNECT, PLACE_SHIPS, MY_TURN, OPPONENT_TURN, GAME_OVER};
+enum game_state{WAIT_FOR_CONNECT_MESSAGE, WAIT_FOR_CONNECT,
+    PLACE_SHIPS_MESSAGE, PLACE_SHIPS_CONFIRM, PLACE_SHIPS,
+    MY_TURN_MESSAGE, MY_TURN_CONFIRM, MY_TURN,
+    OPPONENT_TURN_MESSAGE, OPPONENT_TURN_CONFIRM, OPPONENT_TURN, 
+    GAME_OVER_MESSAGE, GAME_OVER};
 
 
 /* Defines the Ship structure with ship parameters.
@@ -114,6 +119,10 @@ void drawShip(Ship*);
  * whether placement was successful or not. */
 bool placeShip(Ship*, Ship*, int);
 
+/* Performs check on navswitch for the moving and rotating of the
+ * current ship for the PLACE_SHIPS mode */
+void checkNavswitchMoveShip(Ship*);
+
 /* Draws placed and active ships to the LED matrix */
 void drawBoard(Ship*, int);
 
@@ -130,4 +139,7 @@ char encodePointToChar(tinygl_point_t);
 
 /* Decodes char into grid point */
 tinygl_point_t decodeCharToPoint(char c);
+
+/* Sends the current targetter position as a char to the other board */
+void launchMissile(Targetter*);
 #endif
