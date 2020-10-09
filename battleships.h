@@ -14,7 +14,7 @@
 #define MAX_SHIP_OFFSETS 4
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
-#define CONNECTION_CONFIRM 101
+#define CONNECTION_CONFIRM_CODE 101
 
 
 typedef enum state {
@@ -23,7 +23,8 @@ typedef enum state {
     PLACE_SHIPS,
     MY_TURN,
     OPPONENT_TURN, 
-    GAME_OVER} state_t;
+    GAME_OVER
+    } state_t;
 
 
 /* Defines the Ship structure with ship parameters.
@@ -102,7 +103,6 @@ Ship o_ship = {
 
 /* Game variables */
 static state_t gameState;
-static int playerNumber;
 
 
 /* Returns the vector addition of points a and b */
@@ -146,21 +146,33 @@ void resetShip(Ship*);
 /* Resets all ships to default parameters for game reset */
 void resetBoard(Ship*, int);
 
+/* Moves the firing targetter around the grid */
 void moveTargetter(Targetter*, tinygl_point_t);
 
 /* Encodes vector grid point into a char */
 char encodePointToChar(tinygl_point_t);
 
 /* Decodes char into grid point */
-tinygl_point_t decodeCharToPoint(char c);
+tinygl_point_t decodeCharToPoint(char);
 
 /* Sends the current targetter position as a char to the other board */
 void launchMissile(Targetter*);
 
-/* Initialises the UCFK4 system and modules */
-void initialiseSystem(void);
-
 /* Changes game state to new state */
 void changeState(state_t);
+
+// Sets Player ID through IR connection
+bool ir_connect(void);
+
+/* Checks whether the current targetter pos is currently on a ship */
+void checkHit(void);
+
+/* taskGameRun
+ * Handles the game logic task */
+static void taskGameRun (void);
+
+/* taskDisplay
+ * Handles the graphics logic */
+static void taskDisplay (void);
 
 #endif
