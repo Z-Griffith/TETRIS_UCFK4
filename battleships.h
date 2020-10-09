@@ -9,29 +9,35 @@
 #define TOP_BOUND 0
 #define BOTTOM_BOUND 4
 #define MESSAGE_RATE 30
+#define IR_RATE 1
 #define LOOP_RATE 600
 #define MAX_SHIPS 5
 #define MAX_SHIP_OFFSETS 4
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
+#define IR_SEND_QUEUE_MAX 10
 #define CONNECTION_CONFIRM_CODE 101
 
 typedef enum ir_state {
+    NO_MESSAGE,
     WAITING_FOR_RESPONSE,
     READY_TO_SEND,
     CONFIRM,
+    SENDING_STATE,
     SENDING_COORDINATES,
     SEND_HIT,
     SEND_MISS
 } ir_state_t;
 
+/* Enumerator for the control of the current state of the
+ * game */
 typedef enum state {
-    START_SCREEN,
-    WAIT_FOR_CONNECT,
-    PLACE_SHIPS,
-    MY_TURN,
-    OPPONENT_TURN,
-    GAME_OVER
+    START_SCREEN,       // Display game title
+    WAIT_FOR_CONNECT,   // Connect with other board
+    PLACE_SHIPS,        // Place ships on board
+    MY_TURN,            // Run this boards turn to fire
+    OPPONENT_TURN,      // Wait for other boards turn to fire
+    GAME_OVER           // Game win/loss
     } state_t;
 
 
@@ -183,4 +189,10 @@ static void taskGameRun (void);
  * Handles the graphics logic */
 static void taskDisplay (void);
 
+
+// Pop oldest message from queue
+ir_state_t irQueuePop(void);
+
+// Add new message to queue
+void irQueueAdd(ir_state_t, char);
 #endif

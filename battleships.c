@@ -22,6 +22,7 @@
 static state_t gameState;       // Variable to track state of game
 static bool isPlayerOne;        // Is this board player 1?
 static int stateTick = 0;       // Tracks length of time elapsed during a state
+static int irTick = 0;          // Tracks IR ticks rate
 static Targetter* targetter;    // Firing targetter cursor
 static Ship* currentShip;       // Current Ship for ship placing
 static int nShips;              // Total number of ships in Ship array
@@ -29,7 +30,8 @@ static bool placementSuccess;   // Result of last ship placement TODO: Don't thi
 static int nShipsPlaced;        // Total number of Ships successfully placed
 static bool connectionSuccess;  // Result of initial IR connection TODO: Don't think this should be here...
 static Ship ships[MAX_SHIPS];   // Ship array of all ships
-static bool otherPlayerReady;
+static ir_state_t irLastMessageRecieved = NO_MESSAGE;
+static ir_state_t irSendQueue[IR_SEND_QUEUE_MAX];
 
 /* Returns the vector addition of points a and b */
 tinygl_point_t vectorAdd(tinygl_point_t a, tinygl_point_t b)
@@ -299,9 +301,9 @@ tinygl_point_t decodeCharToPoint(char c)
 void launchMissile(Targetter* targetter)
 {
     targetter->hasFired = true;
-    char sendChar = encodePointToChar(targetter->pos);
+    char encodedCoordinates = encodePointToChar(targetter->pos);
     /* Send targetting coordinates to other board for fire */
-    ir_uart_putc(sendChar);
+    irQueueAdd(SENDING_COORDINATES, encodedCoordinates);
 }
 
 // Sets Player ID through IR connection
@@ -332,6 +334,29 @@ void checkHit(void)
             }
         }
     }
+}
+
+// Pop oldest message from queue
+ir_state_t irQueuePop(void)
+{
+    ir_state_t front = irSendQueue[0];
+    for (int i = 1; i < IR_SEND_QUEUE_MAX; i++) {
+        *(irSendQueue + i - 1) = irSendQueue[i];
+    }
+    irSendQueue[IR_SEND_QUEUE_MAX-1] = NO_MESSAGE;
+    return front;
+}
+
+// Add new message to queue
+void irQueueAdd(ir_state_t messageConfig, char data)
+{
+    for (int i = 0; i < IR_SEND_QUEUE_MAX-1; i++) {
+        if (irSendQueue[i] == NO_MESSAGE) {
+            irSendQueue[i] = messageConfig;
+            irSendQueue[i+1] = data;
+        }
+    }
+
 }
 
 /* Handles game state change events
@@ -405,7 +430,6 @@ static void taskGameRun (void)
         case PLACE_SHIPS :
             /* TODO: Refactor into function */
             if (button_push_event_p(BUTTON1)) {
-                tinygl_clear();
                 // Place a ship
                 placementSuccess = placeShip(currentShip, ships, nShips);
                 if (placementSuccess) {
@@ -454,7 +478,6 @@ static void taskGameRun (void)
                  resetTargetter(targetter);
                  changeState(MY_TURN);
              }
-
              break;
 
 
@@ -482,7 +505,7 @@ static void taskDisplay(void)
 
         case PLACE_SHIPS :
             // Display message for n ticks, then display board
-            if (!displayMessage) {
+            if (stateTick > 5000 || navswitch_push_event_p(NAVSWITCH_PUSH)) {
                 stateTick = 6000;
                 tinygl_clear();
                 drawBoard(ships, nShips);
@@ -516,41 +539,24 @@ static void taskDisplay(void)
 
 }
 
-/* Sends the current state to the other board */
-void taskIRSendState (void)
+/* taskIRSendRecieve
+ * Handles the sending and recieving of IR information */
+void taskIRSendRecieve (void)
 {
-    char recieved = '\0'; // Null
-    // We're the master, begin all communications.
-    // Assume we're the master until player numbers are set
-    switch (gameState) {
-        case START_SCREEN :
-            break;
+    bool isSending = false;
+    if (irTick > LOOP_RATE / IR_RATE) {
+        irTick = 0;
+        isSending = true; // We're sending this tick
+    }
 
-        case WAIT_FOR_CONNECT :
-            break;
+    if (isSending && irSendQueue[0] != NO_MESSAGE) {
+        ir_state_t newMessage = irQueuePop();
+        ir_uart_putc(newMessage);
 
-        case PLACE_SHIPS :
-            break;
-
-        case MY_TURN :
-            if (isPlayerOne) {
-                ir_uart_putc(MY_TURN);
-            } else if (ir_uart_read_ready_p ()) {
-                // Recieved char is ready
-                recieved = ir_uart_getc();
-
-                if (recieved == OPPONENT_TURN) {
-                    otherPlayerReady = true;
-                }
-            }
-
-            break;
-
-        case OPPONENT_TURN :
-            break;
-
-        case GAME_OVER :
-            break;
+    } else { // We're recieving
+        if (ir_uart_read_ready_p ()) {
+            irLastMessageRecieved = ir_uart_getc();
+        }
     }
 }
 
@@ -569,6 +575,9 @@ int main(void)
     tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
     pacer_init(LOOP_RATE);
     ir_uart_init();
+    for (int i = 0; i < IR_SEND_QUEUE_MAX; i++) {
+        irSendQueue[i] = NO_MESSAGE;
+    }
     changeState(START_SCREEN);
 
     /* Configure ships to use */
@@ -596,8 +605,8 @@ int main(void)
     connectionSuccess = false;
 
     int ledState = 0;
-    int tick = 0;
-    int tickSpeed = 2;
+    stateTick = 0;
+    irTick = 0;
 
     while(1) {
         pacer_wait();
@@ -606,13 +615,15 @@ int main(void)
 
         taskGameRun(); // Run through game logic
         taskDisplay(); // Run through display logic
+        taskIRSendRecieve(); // Send and recieve data
 
         stateTick++; // Increment stateTick for inter state timing
 
-        // Flash LED for debugging
-        tick++;
-        if (tick > LOOP_RATE / tickSpeed) {
-            tick = 0;
+        irTick++; // Increment irTick for ir send/recieve timing
+
+        // Flash LED
+        if (irTick > LOOP_RATE / IR_RATE) {
+            //tick = 0;
             ledState = !ledState;
         }
         led_set(LED1, ledState);
