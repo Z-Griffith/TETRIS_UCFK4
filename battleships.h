@@ -16,13 +16,21 @@
 #define DEFAULT_POS_Y 3
 #define CONNECTION_CONFIRM_CODE 101
 
+typedef enum ir_state {
+    WAITING_FOR_RESPONSE,
+    READY_TO_SEND,
+    CONFIRM,
+    SENDING_COORDINATES,
+    SEND_HIT,
+    SEND_MISS
+} ir_state_t;
 
 typedef enum state {
     START_SCREEN,
     WAIT_FOR_CONNECT,
     PLACE_SHIPS,
     MY_TURN,
-    OPPONENT_TURN, 
+    OPPONENT_TURN,
     GAME_OVER
     } state_t;
 
@@ -35,15 +43,15 @@ typedef enum state {
  * isActive: Is this ship being placed?
  * isAlive: Does this ship still have alive offsets?
  * isPlaced: Has this ship been successfully placed?
- * 
+ *
  * e.g. Consider this three length 'I' ship on the game board:
- * 
+ *
  *                         centre (pos)
  *                           v
  *         Ship: [-1, 0]  [0, 0]  [1, 0]
  *                  ^        ^       ^
  *           offset 0        1       2
- * 
+ *
  */
 typedef struct Ship_t {
     tinygl_point_t pos;
@@ -109,7 +117,7 @@ static state_t gameState;
 tinygl_point_t vectorAdd(tinygl_point_t, tinygl_point_t);
 
 /* Returns the grid position of a Ship's offset given an offsetIndex */
-tinygl_point_t getGridPosition(Ship*, int); 
+tinygl_point_t getGridPosition(Ship*, int);
 
 /* Checks equality of two tingygl_points A and B */
 bool isEqual(tinygl_point_t, tinygl_point_t);
