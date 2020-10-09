@@ -5,6 +5,8 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 #include "system.h"
 #include "button.h"
 #include "navswitch.h"
@@ -12,8 +14,21 @@
 #include "tinygl.h"
 #include "pacer.h"
 #include "ir_uart.h"
+#include "timer.h"
 #include "../fonts/font5x7_1.h"
 #include "battleships.h"
+
+/* Globals */
+static state_t gameState; // Variable to track state of game
+static bool isPlayerOne; // Is this board player 1?
+static int stateTick = 0; // Tracks length of time elapsed during a state
+static Targetter* targetter; // Firing targetter cursor
+static Ship* currentShip; // Current Ship for ship placing
+static int nShips; // Total number of ships in Ship array
+static bool placementSuccess; // Result of last ship placement TODO: Don't think this should be here...
+static int nShipsPlaced; // Total number of Ships successfully placed
+static bool connectionSuccess; // Result of initial IR connection TODO: Don't think this should be here...
+static Ship ships[MAX_SHIPS]; // Ship array of all ships 
 
 /* Returns the vector addition of points a and b */
 tinygl_point_t vectorAdd(tinygl_point_t a, tinygl_point_t b)
@@ -41,9 +56,7 @@ bool isPointVacant(tinygl_point_t point, Ship* ships, int nShips)
     bool isShipActive;
     bool isShipPlaced;
     for (int i = 0; i < nShips; i++) {
-
         currentShip = &ships[i];
-
         for (int j = 0; j < currentShip->nOffsets; j++) {
             gridPosition = getGridPosition(currentShip, j);
             isShipActive = currentShip->isActive;
@@ -80,6 +93,7 @@ void rotateShip(Ship* ship)
 
         offsetGridPosition = getGridPosition(ship, i);
 
+        // Shift if Ship is out of bounds now
         if (offsetGridPosition.x < TOP_BOUND) {
             moveShip(ship, tinygl_point(1,0));
         } else if (offsetGridPosition.x > BOTTOM_BOUND) {
@@ -104,13 +118,11 @@ void moveShip(Ship* ship, tinygl_point_t moveDirection)
     for (int i = 0; i < ship->nOffsets; i++) {
         gridPosition = getGridPosition(ship, i);
         newGridPosition = vectorAdd(gridPosition, moveDirection);
-
         if(!isWithinGrid(newGridPosition)) {
             isValidMove = false;
             break;
         }
     }
-
     if (isValidMove) {
         ship->pos = vectorAdd(ship->pos, moveDirection);
     }
@@ -120,7 +132,10 @@ void moveShip(Ship* ship, tinygl_point_t moveDirection)
 void drawShip(Ship* ship)
 {
     for (int i = 0; i < ship->nOffsets; i++) {
-        tinygl_draw_point(vectorAdd(ship->pos, ship->offsets[i]), 1);
+        // Only draw offset if not hit
+        if (ship->hitStatus[i] == false) {
+            tinygl_draw_point(vectorAdd(ship->pos, ship->offsets[i]), 1);
+        }
     }
 }
 
@@ -225,10 +240,7 @@ void resetBoard(Ship* ships, int nShips)
 void roundTerm(int termNumber)
 {
     //round term number start with one end with 3.
-    /* TODO: Initialise tinygl. */
-    tinygl_init (500); //PACER_RATE
-    tinygl_font_set (&font5x7_1);
-    tinygl_text_speed_set (25); //MESSAGE_RATE
+    tinygl_text_speed_set (MESSAGE_RATE);
     tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
 
     /* TODO: Set the message using tinygl_text().  */
@@ -290,217 +302,294 @@ tinygl_point_t decodeCharToPoint(char c)
 {
     int x = c % (BOTTOM_BOUND+1);
     int y = (c-x)/(BOTTOM_BOUND+1);
-    
     return tinygl_point(x, y);
 }
-    
 
 /* Sends the current targetter position as a char to the other board */
 void launchMissile(Targetter* targetter)
 {
     targetter->hasFired = true;
-    
     char sendChar = encodePointToChar(targetter->pos); 
-    
     /* Send targetting coordinates to other board for fire */
     ir_uart_putc(sendChar);
 }
 
+// Sets Player ID through IR connection
+bool ir_connect(void)
+{
+    bool success = false;
+    if (button_push_event_p(BUTTON1)) {
+        ir_uart_putc(CONNECTION_CONFIRM_CODE);
+        isPlayerOne = true; // Set this board player 1
+        success = true;
+    } else if (ir_uart_read_ready_p ()) {
+        char recieved = ir_uart_getc();
+        if (recieved == CONNECTION_CONFIRM_CODE) {
+            isPlayerOne = false; // Set this board player 2
+            success = true;
+        }
+    }
+    return success;
+}
+
+/* Checks whether the current targetter pos is currently on a ship */
+void checkHit(void)
+{
+    for (int i = 0; i < nShips; i++) {
+        for (int j = 0; j < ships[i].nOffsets; j++) {
+            if (isEqual(targetter->pos, getGridPosition(ships + i, j))) {
+                ships[i].hitStatus[j] = true;
+            }
+        }
+    }
+}
+
+
+    
+/* Handles game state change events
+ * Displays messages on statechange*/
+void changeState(state_t newState)
+{
+    switch(newState) {
+        case START_SCREEN :
+            tinygl_clear();
+            tinygl_text(" BATTLESHIPS: Push to start");
+            break;
+            
+        case WAIT_FOR_CONNECT :
+            tinygl_clear();
+            tinygl_text(" Player 1 push");
+            break;
+            
+        case PLACE_SHIPS :
+            tinygl_clear();
+            if (isPlayerOne) {
+                tinygl_text("P-1 Place ships");
+            } else {
+                tinygl_text("P-2 Place ships");
+            }
+            break;
+            
+        case MY_TURN :
+            tinygl_clear();
+            tinygl_text("Your turn!");
+            break;
+            
+        case OPPONENT_TURN :
+            tinygl_clear();
+            tinygl_text("Opponents turn!");
+            break;
+            
+        case GAME_OVER :
+            tinygl_clear();
+            tinygl_text(" Game Over!");
+            break;
+    }
+    gameState = newState;
+    stateTick = 0;
+}
+
+
+/* taskGameRun
+ * Handles the game logic task */
+static void taskGameRun (void)
+{
+    switch (gameState) {
+        case START_SCREEN:
+            if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
+                changeState(WAIT_FOR_CONNECT);
+            }
+            break;
+            
+            
+        case WAIT_FOR_CONNECT :
+            /* TODO: This kind of works but it doesn't handle any 
+             * connection losses */
+            if (!connectionSuccess) {
+                connectionSuccess = ir_connect();
+            }
+            if (connectionSuccess) {
+                changeState(PLACE_SHIPS);
+            }                
+            break;
+
+
+        case PLACE_SHIPS :
+            /* TODO: Refactor into function */
+            if (button_push_event_p(BUTTON1)) {
+                // Place a ship
+                placementSuccess = placeShip(currentShip, ships, nShips);
+                if (placementSuccess) {
+                    nShipsPlaced++;
+                    currentShip++;
+                    currentShip->isActive = 1;
+                }
+            }
+
+            checkNavswitchMoveShip(currentShip); // I don't like this much...
+
+            // If all ships placed, start game
+            if (nShipsPlaced == nShips) {
+                if (isPlayerOne == true) {
+                    changeState(MY_TURN);
+                } else if (isPlayerOne == false) {
+                    changeState(OPPONENT_TURN);
+                }
+            }
+            break;
+
+        case MY_TURN :
+            /* TODO: Display confirmation of hit or miss */
+            checkNavswitchMoveTargetter(targetter);
+            if (targetter->hasFired) {
+                resetTargetter(targetter);
+                changeState(OPPONENT_TURN);
+            }
+            break;
+        
+        case OPPONENT_TURN :
+            /* TODO: Display confirmation of hit or miss */
+            /* TODO: Check number of ships surviving, etc */ 
+            
+            if (ir_uart_read_ready_p ()) {
+                char recieved = ir_uart_getc ();
+                /* TODO: Implement message validity check? */
+                 
+                 /* TODO: Check ship hit */
+                 
+                 tinygl_point_t impactPoint = decodeCharToPoint(recieved);
+                 /* TEST */
+                 targetter->pos = impactPoint;
+                 
+                 checkHit();
+                 resetTargetter(targetter);
+                 changeState(MY_TURN);
+             }
+                 
+             break;
+            
+
+        case GAME_OVER :
+            /* TODO: Scoring system? */
+            resetBoard(ships, nShips);
+            currentShip = &ships[0];
+            currentShip->isActive = 1;
+            nShipsPlaced = 0;
+            changeState(PLACE_SHIPS);
+            break;
+        }
+}
+
+/* taskDisplay
+ * Handles the graphics logic */
+static void taskDisplay(void)
+{
+    switch (gameState) {
+        case START_SCREEN :
+            break;
+        
+        case WAIT_FOR_CONNECT :
+            break;
+            
+        case PLACE_SHIPS :
+            // Display message for n ticks, then display board
+            if (stateTick > 5000) {
+                stateTick = 6000;
+                tinygl_clear();
+                drawBoard(ships, nShips);
+            }
+            break;
+            
+        case MY_TURN :
+            // Display message for n ticks, then display target cursor
+            if (stateTick > 3000) {
+                stateTick = 5000;
+                tinygl_clear();
+                drawTargetter(targetter);
+            }
+            break;
+        
+        case OPPONENT_TURN :
+            // Display message for n ticks, then display board
+            if (stateTick > 3000) {
+                stateTick = 5000;
+                tinygl_clear();
+                drawBoard(ships, nShips);
+            }
+            break;
+            
+
+        case GAME_OVER :
+            break;
+        }
+    
+    tinygl_update();
+    
+}
+
+
+
 
 int main(void)
 {
+    /* Initialize system */
     system_init();
     navswitch_init();
     button_init();
     led_init();
     tinygl_init(LOOP_RATE);
+    tinygl_font_set (&font5x7_1);
+    tinygl_text_speed_set (MESSAGE_RATE);
+    tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
     pacer_init(LOOP_RATE);
     ir_uart_init();
-    
-    tinygl_font_set (&font5x7_1);
-
-
-    enum game_state state = WAIT_FOR_CONNECT_MESSAGE;
+    changeState(START_SCREEN);
 
     /* Configure ships to use */
-    Ship ships[] = {
-        L_ship,
-        I_ship,
-        i_ship,
-        i_ship,
-        o_ship,
-        o_ship
-    };
+    ships[0] = L_ship;
+    ships[1] = I_ship;
+    ships[2] = i_ship;
+    ships[3] = i_ship;
+    ships[4] = o_ship;
+    nShips = 5;
     
     /* Build firing targetter for MY_TURN mode */
     Targetter firing_targetter = {
         .pos={DEFAULT_POS_X, DEFAULT_POS_Y},
         .hasFired = false
     };
-    Targetter* targetter = &firing_targetter;
+    targetter = &firing_targetter;
 
-    Ship* currentShip = &ships[0];
+    // Set current ship to new ship
+    currentShip = &ships[0];
     currentShip->isActive = 1;
-    int nShips = 6;
-    int nShipsPlaced = 0;
-    bool placementSuccess = false;
+    
+    // TODO: I don't think these should be globals...?
+    nShipsPlaced = 0;
+    placementSuccess = false;
+    connectionSuccess = false;
+    
     int ledState = 0;
     int tick = 0;
-    int tick_speed = 2;
-    
-    
-    int DEBUG = 1;
+    int tickSpeed = 2;
 
     while(1) {
         pacer_wait();
         navswitch_update();
         button_update();
         
-        /* Change ship state if in DEBUG mode and both buttons are pressed */
-        if (DEBUG) {
-            if (button_push_event_p(BUTTON1) && navswitch_push_event_p(NAVSWITCH_PUSH)) {
-                state++;
-            }
-        }
+        taskGameRun(); // Run through game logic
+        taskDisplay(); // Run through display logic
         
+        stateTick++; // Increment stateTick for inter state timing
         
-        switch (state) {
-            case WAIT_FOR_CONNECT_MESSAGE :
-                tinygl_text_speed_set (MESSAGE_RATE); //MESSAGE_RATE
-                tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
-                tinygl_text("IR CONNECT");
-                state = WAIT_FOR_CONNECT;
-                break;
-                
-            case WAIT_FOR_CONNECT :
-                /* TODO: IR comms connect */
-                if (button_push_event_p(BUTTON1)) {
-                    state = PLACE_SHIPS_MESSAGE;
-                }                
-                break;
-                
-                
-            case PLACE_SHIPS_MESSAGE :
-                tinygl_text_speed_set (MESSAGE_RATE); //MESSAGE_RATE
-                tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
-                tinygl_text("PLACE YOUR SHIPS");
-                state = PLACE_SHIPS_CONFIRM;
-                break;
-                
-            case PLACE_SHIPS_CONFIRM :
-                if (button_push_event_p(BUTTON1)) {
-                    state = PLACE_SHIPS;
-                }                
-                break;
-
-
-            case PLACE_SHIPS :
-                /* TODO: Refactor into function */
-                tick_speed = 2;
-                tinygl_clear();
-                drawBoard(ships, nShips);
-                
-                if (button_push_event_p(BUTTON1)) {
-                    // Place a ship
-                    placementSuccess = placeShip(currentShip, ships, nShips);
-                    if (placementSuccess) {
-                        nShipsPlaced++;
-                        currentShip++;
-                        currentShip->isActive = 1;
-                    }
-                }
-                
-                checkNavswitchMoveShip(currentShip);
-
-                /* If all ships placed, start game */
-                if (nShipsPlaced == nShips) {
-                    /* TODO: next game state should be according to 
-                     * who is player 1 (Decided in WAIT_FOR_COMMS) */
-                    state = MY_TURN_MESSAGE;
-                }
-                break;
-                
-            case MY_TURN_MESSAGE :
-                tinygl_text_speed_set (MESSAGE_RATE); //MESSAGE_RATE
-                tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
-                tinygl_text("MY TURN");
-                state = MY_TURN_CONFIRM;
-                break;
-                
-            case MY_TURN_CONFIRM : 
-                if (button_push_event_p(BUTTON1)) {
-                    state = MY_TURN;
-                }                
-                break;
-
-            case MY_TURN :
-                /* TODO: */
-                tick_speed = 6;
-                tinygl_clear();
-                drawTargetter(targetter);
-                
-                checkNavswitchMoveTargetter(targetter);
-                
-                if (targetter->hasFired) {
-                    resetTargetter(targetter);
-                    state = OPPONENT_TURN_MESSAGE;
-                }
-                
-                break;
-            
-            case OPPONENT_TURN_MESSAGE :
-                tinygl_text_speed_set (MESSAGE_RATE); //MESSAGE_RATE
-                tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
-                tinygl_text("OPPONENTS TURN");
-                state = OPPONENT_TURN_CONFIRM;
-                break;
-                
-            case OPPONENT_TURN_CONFIRM :
-                if (button_push_event_p(BUTTON1)) {
-                    state = OPPONENT_TURN;
-                }                
-                break;
-            
-            case OPPONENT_TURN :
-                tick_speed = 12;
-                tinygl_clear();
-                /* TODO: Implement wait for oppenent turn
-                 * and recieve data */
-                 if (ir_uart_read_ready_p ()) {
-                     char recieved = ir_uart_getc ();
-                     /* TODO: Implement message validity check? */
-                     
-                     /* TODO: Check ship hit */
-                     
-                     tinygl_point_t impactPoint = decodeCharToPoint(recieved);
-                     /* TEST */
-                     targetter->pos = impactPoint;
-                     //state = MY_TURN;
-                 }
-                     
-                 break;
-                
-
-            case GAME_OVER :
-                tick_speed = 24;
-                /* TODO: Scoring system? */
-                resetBoard(ships, nShips);
-                currentShip = &ships[0];
-                currentShip->isActive = 1;
-                nShipsPlaced = 0;
-                state = PLACE_SHIPS;
-                
-                break;
-            }
-
+        // Flash LED for debugging
         tick++;
-        if (tick > LOOP_RATE / tick_speed) {
+        if (tick > LOOP_RATE / tickSpeed) {
             tick = 0;
             ledState = !ledState;
         }
-
         led_set(LED1, ledState);
-        tinygl_update();
     }
 
 }

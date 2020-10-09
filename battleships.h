@@ -8,24 +8,29 @@
 #define RIGHT_BOUND 0
 #define TOP_BOUND 0
 #define BOTTOM_BOUND 4
-#define MAX_SHIP_OFFSETS 5
-#define MESSAGE_RATE 20
+#define MESSAGE_RATE 30
 #define LOOP_RATE 600
+#define MAX_SHIPS 5
+#define MAX_SHIP_OFFSETS 4
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
-#define TICK_SPEED 2
+#define CONNECTION_CONFIRM_CODE 101
 
 
-enum game_state{WAIT_FOR_CONNECT_MESSAGE, WAIT_FOR_CONNECT,
-    PLACE_SHIPS_MESSAGE, PLACE_SHIPS_CONFIRM, PLACE_SHIPS,
-    MY_TURN_MESSAGE, MY_TURN_CONFIRM, MY_TURN,
-    OPPONENT_TURN_MESSAGE, OPPONENT_TURN_CONFIRM, OPPONENT_TURN, 
-    GAME_OVER_MESSAGE, GAME_OVER};
+typedef enum state {
+    START_SCREEN,
+    WAIT_FOR_CONNECT,
+    PLACE_SHIPS,
+    MY_TURN,
+    OPPONENT_TURN, 
+    GAME_OVER
+    } state_t;
 
 
 /* Defines the Ship structure with ship parameters.
  * pos: Current grid position of the ships centre.
  * offsets: List of ship vertices relative to the ship's pos
+ * hitStatus: List of ship offset' status
  * nOffsets: Number of ship vertices
  * isActive: Is this ship being placed?
  * isAlive: Does this ship still have alive offsets?
@@ -43,6 +48,7 @@ enum game_state{WAIT_FOR_CONNECT_MESSAGE, WAIT_FOR_CONNECT,
 typedef struct Ship_t {
     tinygl_point_t pos;
     tinygl_point_t offsets[MAX_SHIP_OFFSETS];
+    bool hitStatus[MAX_SHIP_OFFSETS];
     int nOffsets;
     bool isActive;
     bool isAlive;
@@ -58,6 +64,7 @@ typedef struct Targetter_t {
 Ship L_ship = {
     .pos={1,1},
     .offsets={{1,1}, {1,0}, {0,0}},
+    .hitStatus = {false, false, false},
     .nOffsets = 3,
     .isActive = false,
     .isAlive = true,
@@ -67,6 +74,7 @@ Ship L_ship = {
 Ship I_ship = {
     .pos={1,1},
     .offsets={{-1,0}, {0,0}, {1,0}},
+    .hitStatus = {false, false, false},
     .nOffsets = 3,
     .isActive = false,
     .isAlive = true,
@@ -76,6 +84,7 @@ Ship I_ship = {
 Ship i_ship = {
     .pos={1,1},
     .offsets={{-1,0}, {0,0}},
+    .hitStatus = {false, false},
     .nOffsets = 2,
     .isActive = false,
     .isAlive = true,
@@ -85,11 +94,16 @@ Ship i_ship = {
 Ship o_ship = {
     .pos={1,1},
     .offsets={{0,0}},
+    .hitStatus = {false},
     .nOffsets = 1,
     .isActive = false,
     .isAlive = true,
     .isPlaced = false
 };
+
+/* Game variables */
+static state_t gameState;
+
 
 /* Returns the vector addition of points a and b */
 tinygl_point_t vectorAdd(tinygl_point_t, tinygl_point_t);
@@ -132,14 +146,33 @@ void resetShip(Ship*);
 /* Resets all ships to default parameters for game reset */
 void resetBoard(Ship*, int);
 
+/* Moves the firing targetter around the grid */
 void moveTargetter(Targetter*, tinygl_point_t);
 
 /* Encodes vector grid point into a char */
 char encodePointToChar(tinygl_point_t);
 
 /* Decodes char into grid point */
-tinygl_point_t decodeCharToPoint(char c);
+tinygl_point_t decodeCharToPoint(char);
 
 /* Sends the current targetter position as a char to the other board */
 void launchMissile(Targetter*);
+
+/* Changes game state to new state */
+void changeState(state_t);
+
+// Sets Player ID through IR connection
+bool ir_connect(void);
+
+/* Checks whether the current targetter pos is currently on a ship */
+void checkHit(void);
+
+/* taskGameRun
+ * Handles the game logic task */
+static void taskGameRun (void);
+
+/* taskDisplay
+ * Handles the graphics logic */
+static void taskDisplay (void);
+
 #endif
