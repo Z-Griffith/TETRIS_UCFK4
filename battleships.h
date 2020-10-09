@@ -8,19 +8,22 @@
 #define RIGHT_BOUND 0
 #define TOP_BOUND 0
 #define BOTTOM_BOUND 4
-#define MAX_SHIP_OFFSETS 5
 #define MESSAGE_RATE 20
 #define LOOP_RATE 600
+#define MAX_SHIP_OFFSETS 4
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
-#define TICK_SPEED 2
 
 
-enum game_state{WAIT_FOR_CONNECT_MESSAGE, WAIT_FOR_CONNECT,
-    PLACE_SHIPS_MESSAGE, PLACE_SHIPS_CONFIRM, PLACE_SHIPS,
-    MY_TURN_MESSAGE, MY_TURN_CONFIRM, MY_TURN,
-    OPPONENT_TURN_MESSAGE, OPPONENT_TURN_CONFIRM, OPPONENT_TURN, 
-    GAME_OVER_MESSAGE, GAME_OVER};
+typedef enum state {
+    START_SCREEN,
+    WAIT_FOR_CONNECT,
+    PLACE_SHIPS,
+    MY_TURN,
+    OPPONENT_TURN, 
+    GAME_OVER
+    
+    } state_t;
 
 
 /* Defines the Ship structure with ship parameters.
@@ -91,6 +94,12 @@ Ship o_ship = {
     .isPlaced = false
 };
 
+/* Game variables */
+static state_t gameState;
+static int playerNumber;
+static int boardID;
+
+
 /* Returns the vector addition of points a and b */
 tinygl_point_t vectorAdd(tinygl_point_t, tinygl_point_t);
 
@@ -142,4 +151,11 @@ tinygl_point_t decodeCharToPoint(char c);
 
 /* Sends the current targetter position as a char to the other board */
 void launchMissile(Targetter*);
+
+/* Initialises the UCFK4 system and modules */
+void initialiseSystem(void);
+
+/* Changes game state to new state */
+void changeState(state_t);
+
 #endif
