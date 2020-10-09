@@ -8,11 +8,13 @@
 #define RIGHT_BOUND 0
 #define TOP_BOUND 0
 #define BOTTOM_BOUND 4
-#define MESSAGE_RATE 20
+#define MESSAGE_RATE 30
 #define LOOP_RATE 600
+#define MAX_SHIPS 5
 #define MAX_SHIP_OFFSETS 4
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
+#define CONNECTION_CONFIRM 101
 
 
 typedef enum state {
