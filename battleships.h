@@ -15,8 +15,26 @@
 #define TICK_SPEED 2
 
 
-enum game_state{WAIT_FOR_CONNECT, PLACE_SHIPS, GAME_RUN, GAME_OVER};
+enum game_state{WAIT_FOR_CONNECT, PLACE_SHIPS, MY_TURN, OPPONENT_TURN, GAME_OVER};
 
+
+/* Defines the Ship structure with ship parameters.
+ * pos: Current grid position of the ships centre.
+ * offsets: List of ship vertices relative to the ship's pos
+ * nOffsets: Number of ship vertices
+ * isActive: Is this ship being placed?
+ * isAlive: Does this ship still have alive offsets?
+ * isPlaced: Has this ship been successfully placed?
+ * 
+ * e.g. Consider this three length 'I' ship on the game board:
+ * 
+ *                         centre (pos)
+ *                           v
+ *         Ship: [-1, 0]  [0, 0]  [1, 0]
+ *                  ^        ^       ^
+ *           offset 0        1       2
+ * 
+ */
 typedef struct Ship_t {
     tinygl_point_t pos;
     tinygl_point_t offsets[MAX_SHIP_OFFSETS];
@@ -26,6 +44,11 @@ typedef struct Ship_t {
     bool isPlaced;
 } Ship;
 
+
+typedef struct Targetter_t {
+    tinygl_point_t pos;
+    bool hasFired;
+} Targetter;
 
 Ship L_ship = {
     .pos={1,1},
@@ -100,5 +123,5 @@ void resetShip(Ship*);
 /* Resets all ships to default parameters for game reset */
 void resetBoard(Ship*, int);
 
-
+void moveTargetter(Targetter*, tinygl_point_t);
 #endif

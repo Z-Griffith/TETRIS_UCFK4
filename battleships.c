@@ -213,6 +213,33 @@ void roundTerm(int termNumber)
 }
 
 
+void moveTargetter(Targetter* targetter, tinygl_point_t direction)
+{
+    tinygl_point_t newPosition = vectorAdd(targetter->pos, direction);
+    if (isWithinGrid(newPosition)) {
+        targetter->pos = newPosition;
+    }
+}
+
+void drawTargetter(Targetter* targetter)
+{
+    /* TODO: Put a toggle so the targetter can flash with tick
+     * update maybe? */
+     tinygl_draw_point(targetter->pos, 1);
+}
+
+void resetTargetter(Targetter* targetter)
+{
+    targetter->pos = tinygl_point(DEFAULT_POS_X, DEFAULT_POS_Y);
+    targetter->hasFired = false;
+}
+
+void launchMissile(Targetter* targetter)
+{
+    /* TODO: Implement the send and recieve missile coords */
+    targetter->hasFired = true;
+}
+
 
 int main(void)
 {
@@ -234,6 +261,13 @@ int main(void)
         o_ship,
         o_ship
     };
+    
+    
+    Targetter firing_targetter = {
+        .pos={DEFAULT_POS_X, DEFAULT_POS_Y},
+        .hasFired = false
+    };
+    Targetter* targetter = &firing_targetter;
 
     Ship* currentShip = &ships[0];
     currentShip->isActive = 1;
@@ -284,25 +318,56 @@ int main(void)
 
                 /* If all ships placed, start game */
                 if (nShipsPlaced == nShips) {
-                    state = GAME_RUN;
+                    /* TODO: next game state should be according to 
+                     * who is player 1 (Decided in WAIT_FOR_COMMS) */
+                     
+                    state = MY_TURN;
                 }
                 break;
 
-            case GAME_RUN :
+            case MY_TURN :
                 /* TODO: */
-                drawBoard(ships, nShips);
+                tinygl_clear();
+                drawTargetter(targetter);
                 
-                /* Test resets */
+                if (navswitch_push_event_p(NAVSWITCH_WEST)) {
+                    moveTargetter(targetter, tinygl_point(-1,0));
+                }
+                if (navswitch_push_event_p(NAVSWITCH_EAST)) {
+                    moveTargetter(targetter, tinygl_point(1, 0));
+                }
+                if (navswitch_push_event_p(NAVSWITCH_NORTH)) {
+                    moveTargetter(targetter, tinygl_point(0, -1));
+                }
+                if (navswitch_push_event_p(NAVSWITCH_SOUTH)) {
+                    moveTargetter(targetter, tinygl_point(0,1));
+                }
+                if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
+                    launchMissile(targetter);
+                }
+                
+                
+                if (targetter->hasFired) {
+                    resetTargetter(targetter);
+                    state = OPPONENT_TURN;
+                }
+                
+                break;
+                
+                
+            case OPPONENT_TURN :
+                /* TODO: Implement wait for oppenent turn
+                 * and recieve data */
+                 break;
+                
+
+            case GAME_OVER:
+                /* TODO: Scoring system? */
                 resetBoard(ships, nShips);
                 currentShip = &ships[0];
                 currentShip->isActive = 1;
                 nShipsPlaced = 0;
-                state = PLACE_SHIPS;
                 
-                break;
-
-            case GAME_OVER:
-                continue;
                 break;
             }
 
