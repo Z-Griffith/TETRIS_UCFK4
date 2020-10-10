@@ -16,11 +16,11 @@ Scott Li (gli65@uclive.ac.nz), Sam Heslip (she119@uclive.ac.nz)
 ## Usage
 
 From within this directory, the following commands can be run
-```Bash
+
 - `make`: Compiles source code and builds object files
 - `make program`: Runs `make` and then loads program into UCFK4 flash memory
 - `make clean`: Remove old object files from directory
-```
+
 Run `make program` to start playing!
 
 
