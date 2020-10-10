@@ -1,6 +1,6 @@
 /** @file   battleships.c
     @author S. Li (gli65), S.A. Heslip (she119)
-    @date   30 Sep 2020
+    @date   11 Oct 2020
 */
 
 #include <stdlib.h>
@@ -19,39 +19,107 @@
 #include "ir_comms.h"
 #include "battleships.h"
 
-/* Globals */
-static state_t gameState;       // Variable to track state of game
-static bool isPlayerOne;        // Is this board player 1?
-static int stateTick = 0;       // Tracks length of time elapsed during a state
-static Targetter* targetter;    // Firing targetter cursor
-static Ship* currentShip;       // Current Ship for ship placing
-static int nShips;              // Total number of ships in Ship array
-static bool placementSuccess;   // Result of last ship placement TODO: Don't think this should be here...
-static int nShipsPlaced;        // Total number of Ships successfully placed
-static Ship ships[MAX_SHIPS];   // Ship array of all ships
+/* -------- Static Variables --------- */ // TODO: Get rid of some of these globals
+/** 
+ * @brief Tracks game state.
+ */ 
+static state_t gameState; 
+
+/** 
+ * @brief Tracks if this board is player one or not.
+ */ 
+static bool isPlayerOne; 
+
+/** 
+ * @brief Tracks number of ticks passed since entering a new game state.
+ */ 
+static int stateTick = 0;  
 
 
-// DEBUG
-static int ledState = 0;
+/** 
+ * @brief Firing targetter struct
+ */ 
+static Targetter* targetter;
 
-/* Returns the vector addition of points a and b */
+
+/** 
+ * @brief Tracks current ship being placed.
+ */ 
+static Ship* currentShip;
+
+
+/** 
+ * @brief Total number of ships in the ships array.
+ */ 
+static int nShips;           
+
+
+/** 
+ * @brief Tracks if the last Ship placement was successful or not.
+ */ 
+static bool placementSuccess;  
+
+
+/** 
+ * @brief Tracks number of Ships successfully placed.
+ */ 
+static int nShipsPlaced; 
+
+
+/** 
+ * @brief Global ships array, contains all ships placed or not.
+ */ 
+static Ship ships[MAX_SHIPS];   
+
+/** 
+ * @brief Controls the state of the LED.
+ */ 
+static bool ledState = false;
+/* -------- END STATIC VARIABLES --------- */
+
+
+/** 
+ * @brief Returns the vector addition of points a and b.
+ * @param First point vector, a.
+ * @param Second point vector, b.
+ * @return Vector sum of points a and b as a vector.
+ */
 tinygl_point_t vectorAdd(tinygl_point_t a, tinygl_point_t b)
 {
     return tinygl_point(a.x + b.x, a.y + b.y);
 }
 
-/* Returns the grid position of a Ship's offset given an offsetIndex */
+
+/** 
+ * @brief Returns the grid position of a Ship's offset given an offsetIndex
+ * @param Ship pointer.
+ * @param offsetIndex.
+ * @return Grid position as a vector.
+ */
 tinygl_point_t getGridPosition(Ship* ship, int offsetIndex)
 {
     return vectorAdd(ship->pos, ship->offsets[offsetIndex]);
 }
 
-/* Checks equality of two tingygl_points A and B */
+
+/** 
+ * @brief Checks equality between two vectors (tinygl_point_t).
+ * @param First point vector, a.
+ * @param Second point vector, b.
+ * @return True if a and b vectors are equal.
+ */
 bool isEqual(tinygl_point_t pointA, tinygl_point_t pointB) {
     return (pointA.x == pointB.x && pointA.y == pointB.y);
 }
 
-/* Checks if point on the grid is vacant */
+
+/** 
+ * @brief Checks if a grid point does not contain a placed ship.
+ * @param Grid point as a vector.
+ * @param Ships array.
+ * @param number of ships in ships array.
+ * @return True if point is free of ships.
+ */
 bool isPointVacant(tinygl_point_t point, Ship* ships, int nShips)
 {
     bool pointIsVacant = true;
@@ -74,7 +142,12 @@ bool isPointVacant(tinygl_point_t point, Ship* ships, int nShips)
     return pointIsVacant;
 }
 
-/* Checks whether a point is within the game grid or out of bounds */
+
+/** 
+ * @brief Checks if a point is within the game grid.
+ * @param Grid point as a vector.
+ * @return True if point is within the game grid.
+ */
 bool isWithinGrid(tinygl_point_t point)
 {
     bool isWithinXLimits = (point.x >= TOP_BOUND && point.x <= BOTTOM_BOUND);
@@ -83,7 +156,11 @@ bool isWithinGrid(tinygl_point_t point)
     return (isWithinXLimits && isWithinYLimits);
 }
 
-/* Rotates a Ship 90 degrees and shifts if Ship is then outside the grid*/
+
+/** 
+ * @brief Rotates a Ship 90 degrees and shifts if then outside the grid
+ * @param Ship pointer.
+ */
 void rotateShip(Ship* ship)
 {
     tinygl_point_t newOffset;
@@ -112,7 +189,12 @@ void rotateShip(Ship* ship)
     }
 }
 
-/* Moves a Ship across the grid in a given direction if possible */
+
+/** 
+ * @brief Moves a Ship across the grid in a given direction if possible.
+ * @param Ship pointer.
+ * @param Direction to move ship as a vector.
+ */
 void moveShip(Ship* ship, tinygl_point_t moveDirection)
 {
     bool isValidMove = true;
@@ -132,7 +214,11 @@ void moveShip(Ship* ship, tinygl_point_t moveDirection)
     }
 }
 
-/* Draws a Ship to the LED matrix */
+
+/** 
+ * @brief Draws a ship to the LED matrix using TinyGL.
+ * @param Ship pointer.
+ */
 void drawShip(Ship* ship)
 {
     for (int i = 0; i < ship->nOffsets; i++) {
@@ -143,8 +229,14 @@ void drawShip(Ship* ship)
     }
 }
 
-/* Attempts to place a Ship at it's current position, returns
- * whether placement was successful or not. */
+
+/** 
+ * @brief Attempts to place a Ship at it's current position.
+ * @param Ship pointer.
+ * @param Ships array.
+ * @param Number of ships in ships array.
+ * @return Returns True if placement was successful.
+ */
 bool placeShip(Ship* ship, Ship* ships, int nShips)
 {
     bool isValidPlacement = true;
@@ -167,8 +259,10 @@ bool placeShip(Ship* ship, Ship* ships, int nShips)
 }
 
 
-/* Performs check on navswitch for the moving and rotating of the
- * current ship for the PLACE_SHIPS mode */
+/** 
+ * @brief Performs check on navswitch for moving and rotating a Ship.
+ * @param Ship pointer.
+ */
 void checkNavswitchMoveShip(Ship* currentShip)
 {
     if (navswitch_push_event_p(NAVSWITCH_WEST)) {
@@ -188,8 +282,10 @@ void checkNavswitchMoveShip(Ship* currentShip)
     }
 }
 
-/* Performs check on navswitch for the moving and of the
- * firing targetter for the MY_TURN mode */
+/** 
+ * @brief Performs check on navswitch for moving Targetter.
+ * @param Targetter pointer.
+ */
 void checkNavswitchMoveTargetter(Targetter* targetter)
 {
     if (navswitch_push_event_p(NAVSWITCH_WEST)) {
@@ -206,7 +302,12 @@ void checkNavswitchMoveTargetter(Targetter* targetter)
     }
 }
 
-/* Draws placed and active ships to the LED matrix */
+
+/** 
+ * @brief Draws placed and active ships to the LED matrix.
+ * @param Ships array.
+ * @param Number of ships in ships array.
+ */
 void drawBoard(Ship* ships, int nShips)
 {
     Ship currentShip;
@@ -218,7 +319,11 @@ void drawBoard(Ship* ships, int nShips)
     }
 }
 
-/* Resets a ship to default parameters for game reset */
+
+/** 
+ * @brief Resets a ship to default parameters for game reset.
+ * @param Ships pointer.
+ */
 void resetShip(Ship* ship) {
     ship->pos.x = DEFAULT_POS_X;
     ship->pos.y = DEFAULT_POS_Y;
@@ -228,7 +333,11 @@ void resetShip(Ship* ship) {
 }
 
 
-/* Resets all ships to default parameters for game reset */
+/** 
+ * @brief Resets all ships to default parameters for game reset.
+ * @param Ships array.
+ * @param Number of ships in ships array.
+ */
 void resetBoard(Ship* ships, int nShips)
 {
     for (int i = 0; i < nShips; i++) {
@@ -236,7 +345,12 @@ void resetBoard(Ship* ships, int nShips)
     }
 }
 
-/* Moves the firing targetter around the grid */
+
+/** 
+ * @brief Moves the firing targetter around the grid.
+ * @param Targetter pointer.
+ * @param Direction as a vector.
+ */
 void moveTargetter(Targetter* targetter, tinygl_point_t direction)
 {
     tinygl_point_t newPosition = vectorAdd(targetter->pos, direction);
@@ -245,7 +359,11 @@ void moveTargetter(Targetter* targetter, tinygl_point_t direction)
     }
 }
 
-/*  Draws the firing targetter to the screen */
+
+/** 
+ * @brief Draws the firing targetter to the LED matrix using TinyGL
+ * @param Targetter pointer.
+ */
 void drawTargetter(Targetter* targetter)
 {
     /* TODO: Put a toggle so the targetter can flash with tick
@@ -253,19 +371,33 @@ void drawTargetter(Targetter* targetter)
      tinygl_draw_point(targetter->pos, 1);
 }
 
-/* Resets the targetter to defaults */
+
+/** 
+ * @brief Resets the firing targetter to its default position.
+ * @param Targetter pointer.
+ */
 void resetTargetter(Targetter* targetter)
 {
     targetter->pos = tinygl_point(DEFAULT_POS_X, DEFAULT_POS_Y);
 }
 
-/* Encodes vector grid point into a char */
+
+/** 
+ * @brief Encodes vector grid point into a char for IR sending.
+ * @param Grid point as a vector.
+ * @return Encoded char.
+ */
 char encodePointToChar(tinygl_point_t point)
 {
     return ((BOTTOM_BOUND + 1) * point.y) + point.x;
 }
 
-/* Decodes char into grid point */ 
+
+/** 
+ * @brief Decodes vector grid point into a char for IR recieving.
+ * @param Encoded char.
+ * @return Grid point as a vector.
+ */
 tinygl_point_t decodeCharToPoint(char c)
 {
     int x = c % (BOTTOM_BOUND+1);
@@ -274,9 +406,10 @@ tinygl_point_t decodeCharToPoint(char c)
 }
 
 
-/* Checks whether point is currently on a ship and removes 
- * a chunk of the ship that was hit (the offset hitStatus
- * becomes true) 
+/** 
+ * @brief Checks whether point is currently on a ship.
+ * @param Grid point as a vector.
+ * @return True if a ship is located at this grid point.
  */
 bool checkShipHit(tinygl_point_t impactPoint)
 {
@@ -294,8 +427,10 @@ bool checkShipHit(tinygl_point_t impactPoint)
 
 
 
-/* Handles game state change events
- * Displays messages on statechange*/
+/** 
+ * @brief Changes game state to new state and perform trans-state actions.
+ * @param New game state.
+ */
 void changeState(state_t newState)
 {
     switch(newState) {
@@ -344,8 +479,9 @@ void changeState(state_t newState)
 }
 
 
-/* taskGameRun
- * Handles the game logic task */
+/** 
+ * @brief Handles the game logic, sending/recieving IR, and state changes.
+ */
 static void taskGameRun (void)
 {
     char newMessage = '\0'; // TODO: ???!
@@ -457,8 +593,9 @@ static void taskGameRun (void)
             
         case WAIT_FOR_HIT_SEND :
             // if checkWin is zero The statement change to game over
-            if (checkWin() == false) {
+            if (checkGameLoss()) {
                 changeState(GAME_OVER);
+                // TODO: Send game over flag.
             }
 
             if (irWasSentMessageReceived(SEND_HIT) || irWasSentMessageReceived(SEND_MISS)) {
@@ -479,8 +616,10 @@ static void taskGameRun (void)
         }
 }
 
-/* taskDisplay
- * Handles the graphics logic */
+
+/** 
+ * @brief Handles the graphics logic, message timeouts, etc.
+ */
 static void taskDisplay(void)
 {
     switch (gameState) {
@@ -534,31 +673,38 @@ static void taskDisplay(void)
 }
 
 
-/* Check ship sink or not */
-bool checkShipSink(Ship* checkShip)
+/** 
+ * @brief Checks whether a Ship has sunk or not (All offsets hit).
+ * @param Ship pointer.
+ * @return True if all offsets are hit; ship has sank.
+ */
+bool isShipSunk(Ship* ship)
 {
-    bool checkSink = true;
-    for (int i = 0; i < checkShip->nOffsets; i++) {
-        if (ships->hitStatus[i] == true) {
-            checkSink = true;
-        } else {
-            checkSink = false;
+    bool hasShipSank = true;
+    for (int i = 0; i < ship->nOffsets; i++) {
+        if (ship->hitStatus[i] == false) {
+            hasShipSank = false;
             break;
         }
     }
-    return checkSink;
+    return hasShipSank;
 }
 
-/* Check Who is the winner */
-bool checkWin (void) {
-    int playerShipNum = 0;
+/** 
+ * @brief Checks whether this board's player has lost the game.
+ * @return True if this board has all ships sunk.
+ */
+bool checkGameLoss (void) 
+{
+    bool hasPlayerLost = true;
     for (int i = 0; i < nShips; i++) {
-        if (!checkShipSink(&ships[i])) {
-            playerShipNum++;
+        if (isShipSunk(&ships[i]) == false) {
+            // A ship hasn't sank yet, game on.
+            hasPlayerLost = false;
+            break;
         }
     }
-    return playerShipNum > 0;
-
+    return hasPlayerLost;
 }
 
 /* Show winner*/
@@ -576,6 +722,9 @@ void showWinner(int player)
 }
 
 
+/** 
+ * @brief Mainloop. Initialise all utilities and drivers and loop.
+ */
 int main(void)
 {
     /* Initialize system */

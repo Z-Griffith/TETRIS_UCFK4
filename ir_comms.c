@@ -3,15 +3,19 @@
     @date   11 Oct 2020
 */
 
-
 #include <stdlib.h>
 #include "ir_uart.h"
 #include "ir_comms.h"
 
+/** 
+ * @brief Defines the irHandler struct.
+ */
 static irHandler_t irHandler;
 
 
-// Recieve an IR message
+/** 
+ * @brief Recieves an IR message (char) and stores it.
+ */
 void irRecieveMessage(void)
 {
     if (ir_uart_read_ready_p ()) {
@@ -24,7 +28,10 @@ void irRecieveMessage(void)
     }
 }
 
-// Send a IR message
+/** 
+ * @brief Sends an IR message (char).
+ * @param message: Message to be sent.
+ */
 void irSendMessage(char message) {
     while (!ir_uart_write_ready_p ()) {
         continue;
@@ -36,7 +43,9 @@ void irSendMessage(char message) {
     irHandler.wasLastSentConfirmed = false;
 }
 
-// Send confirmation messages to other board
+/** 
+ * @brief Sends a CONFIRM message to confirm a message was recieved.
+ */
 void irSendConfirmationMessage(void) {
     for (int i = 0; i < 3; i++) { // Send 3 confirms
         ir_uart_putc(CONFIRM);
@@ -45,8 +54,10 @@ void irSendConfirmationMessage(void) {
     irHandler.hasNewMessage = true;
 }
 
-
-// Checks whether a CONFIRM has been sent back
+/** 
+ * @brief Recieves a (hopefully) CONFIRM IR message as a response to 
+ * the last message sent.
+ */
 void irCheckForConfirmationMessage(void)
 {
     if (ir_uart_read_ready_p()) {
@@ -61,7 +72,9 @@ void irCheckForConfirmationMessage(void)
     }
 }
 
-// Defines the irTask machine, run through each frame
+/** 
+ * @brief IR task machine. Runs IR logic and must be called each frame.
+ */
 void irTask(void)
 {
     irHandler.sendTick++;
@@ -106,7 +119,11 @@ void irTask(void)
     }
 }
 
-// Initialises the irHandler to defaults
+/** 
+ * @brief Initialises the IR handler and it's parameters.
+ * @param loopRate: loop speed of the main program.
+ * @param irRate: Rate at which IR logic is polled.
+ */
 void irInit(int loopRate, int irRate)
 {
     irHandler.messageToSend = NO_MESSAGE;
@@ -122,13 +139,20 @@ void irInit(int loopRate, int irRate)
     irHandler.irRate = irRate;
 }
 
-// Checks whether confirmation was recieved for last message
+/** 
+ * @brief Checks whether the last sent message was recieved properly.
+ * @param message: The message we want to check.
+ * @return bool: Was it recieved properly?
+ */
 bool irWasSentMessageReceived(char message) 
 {
     return (irHandler.wasLastSentConfirmed && irHandler.lastMessageSent == message); // TODO: Conflicting
 }
 
-// Retrieve new message
+/** 
+ * @brief IR utility function for getting the last message recieved.
+ * @return char: Last message recieved.
+ */
 char irGetLastMessageRecieved(void) {
     char newMessage = irHandler.lastMessageRecieved;
     
@@ -139,37 +163,53 @@ char irGetLastMessageRecieved(void) {
     }
 }
 
+/** 
+ * @brief IR utility function. Mark last recieved message as read to prevent double-checking
+ */
 void irMarkMessageAsRead(void) {
     irHandler.hasNewMessage = false;
 }
 
 
-
-// Returns last message sent over IR
+/** 
+ * @brief IR utility function. Returns last message sent over IR.
+ * @return char: last message sent.
+ */
 char irGetLastMessageSent(void)
 {
     return irHandler.lastMessageSent;
 }
 
-// Sends missile targetting coordinates to other board
+/** 
+ * @brief Sends encoded coordinates of missile impact to other board.
+ * @param char of encoded coordinates.
+ */
 void irSendMissile(char encodedCoords) 
 {
     irHandler.messageToSend = encodedCoords;
 }
 
-// Sends a request to the other board requesting player 1
+
+/** 
+ * @brief Sends a request to the other board to make the sending board Player 1
+ */
 void irRequestPlayerOne(void) 
 {
     irHandler.messageToSend = REQUEST_PLAYER_ONE;
 }
 
-// Sends the other board a notification saying last missile hit
+
+/** 
+ * @brief Sends the other board a notification saying last missile hit
+ */
 void irSendHit(void) 
 {
     irHandler.messageToSend = SEND_HIT;
 }
 
-// Sends the other board a notification saying last missile missed
+/** 
+ * @brief Sends the other board a notification saying last missile missed
+ */
 void irSendMiss(void) 
 {
     irHandler.messageToSend = SEND_MISS;

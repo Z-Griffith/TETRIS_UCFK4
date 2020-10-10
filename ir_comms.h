@@ -5,17 +5,23 @@
 
 #ifndef IR_COMMS_H
 #define IR_COMMS_H
-
 #include <stdbool.h>
 
-// Checks for confirm N times before resend
-#define IR_WATCHDOG_MAX 10 
+/** 
+ * @brief Check for a CONFIRM message this many IR ticks before resending message.
+ */
+#define IR_WATCHDOG_MAX 5
 
-// Maximum times to resend an unconfirmed message before giving up
+
+/** 
+ * @brief Maximum times to resend an unresponded message before giving up.
+ */
 #define IR_RESEND_ATTEMPTS 50 
 
 
-// Enumerates important message codes
+/** 
+ * @brief Defines the actual values of flag messages send over IR.
+ */
 typedef enum ir_state {
     NO_MESSAGE = 100,
     CONFIRM = 101,
@@ -23,10 +29,13 @@ typedef enum ir_state {
     SEND_HIT = 104,
     SEND_MISS = 105,
     MESSAGE_SENT = 106,
-    MESSAGE_READ = 107
 } ir_state_t;
 
-// Defines the IR handler struct
+
+/** 
+ * @brief Declares the IR handler struct which carries all information
+ * for the IR send and recieve logic.
+ */
 typedef struct ir_handler_t {
     char messageToSend;
     char lastMessageSent;
@@ -42,59 +51,96 @@ typedef struct ir_handler_t {
 } irHandler_t;
 
 
-// Recieve an IR message
+/** 
+ * @brief Recieves an IR message (char) and stores it.
+ */
 void irRecieveMessage(void);
 
-// -----------------------------
-void irMarkMessageAsRead(void);
 
-// Send a IR message
+/** 
+ * @brief Sends an IR message (char).
+ * @param message: Message to be sent.
+ */
 void irSendMessage(char);
 
 
-// Send confirmation messages to other board
+/** 
+ * @brief Sends a CONFIRM message to confirm a message was recieved.
+ */
 void irSendConfirmationMessage(void);
 
 
-// Is there a new message ready
-bool irHasNewMessage(void);
-
-
-// Checks whether a CONFIRM has been sent back
+/** 
+ * @brief Recieves a (hopefully) CONFIRM IR message as a response to 
+ * the last message sent.
+ */
 void irCheckForConfirmationMessage(void);
 
 
-// Defines the irTask machine, run through each frame
+/** 
+ * @brief IR task machine. Runs IR logic and must be called each frame.
+ */
 void irTask(void);
 
 
-// Initialises the irHandler to defaults
+/** 
+ * @brief Initialises the IR handler and it's parameters.
+ * @param loopRate: loop speed of the main program.
+ * @param irRate: Rate at which IR logic is polled.
+ */
 void irInit(int, int);
 
-// Checks whether confirmation was recieved for last message
+
+/** 
+ * @brief Checks whether the last sent message was recieved properly.
+ * @param message: The message we want to check.
+ * @return bool: Was it recieved properly?
+ */
 bool irWasSentMessageReceived(char);
 
 
-// Retrieve new message
+/** 
+ * @brief IR utility function for getting the last message recieved.
+ * @return char: Last message recieved.
+ */
 char irGetLastMessageRecieved(void);
 
 
-// Returns last message sent over IR
+/** 
+ * @brief IR utility function. Mark last recieved message as read to prevent double-checking
+ */
+void irMarkMessageAsRead(void);
+
+
+/** 
+ * @brief IR utility function. Returns last message sent over IR.
+ * @return char: last message sent.
+ */
 char irGetLastMessageSent(void);
 
-// Sends missile targetting coordinates to other board
+
+/** 
+ * @brief Sends encoded coordinates of missile impact to other board.
+ * @param char of encoded coordinates.
+ */
 void irSendMissile(char);
 
 
-// Sends a request to the other board requesting player 1
+/** 
+ * @brief Sends a request to the other board to make the sending board Player 1
+ */
 void irRequestPlayerOne(void);
 
 
-// Sends the other board a notification saying last missile hit
+/** 
+ * @brief Sends the other board a notification saying last missile hit
+ */
 void irSendHit(void);
 
 
-// Sends the other board a notification saying last missile missed
+/** 
+ * @brief Sends the other board a notification saying last missile missed
+ */
 void irSendMiss(void);
 
 #endif
