@@ -22,3 +22,4 @@ From within this directory, the following commands can be run
 
 Run `make program` to start playing!
 
+# How to play game
