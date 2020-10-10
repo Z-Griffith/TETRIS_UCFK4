@@ -1,3 +1,8 @@
+/** @file   battleships.c
+    @author S. Li (gli65), S.A. Heslip (she119)
+    @date   10 Oct 2020
+*/
+
 #ifndef BATTLESHIPS
 #define BATTLESHIPS
 
@@ -9,7 +14,7 @@
 #define TOP_BOUND 0
 #define BOTTOM_BOUND 4
 #define MESSAGE_RATE 30
-#define IR_RATE 1
+#define IR_RATE 100
 #define LOOP_RATE 600
 #define MAX_SHIPS 5
 #define MAX_SHIP_OFFSETS 4
@@ -18,16 +23,6 @@
 #define IR_SEND_QUEUE_MAX 10
 #define CONNECTION_CONFIRM_CODE 101
 
-typedef enum ir_state {
-    NO_MESSAGE,
-    WAITING_FOR_RESPONSE,
-    READY_TO_SEND,
-    CONFIRM,
-    SENDING_STATE,
-    SENDING_COORDINATES,
-    SEND_HIT,
-    SEND_MISS
-} ir_state_t;
 
 /* Enumerator for the control of the current state of the
  * game */
@@ -72,7 +67,8 @@ typedef struct Ship_t {
 
 typedef struct Targetter_t {
     tinygl_point_t pos;
-    bool hasFired;
+    bool hasFired; // Has this targetter fired?
+    bool hasLocalTarget; // Does this targetter have a local target?
 } Targetter;
 
 Ship L_ship = {
@@ -179,7 +175,7 @@ void changeState(state_t);
 bool ir_connect(void);
 
 /* Checks whether the current targetter pos is currently on a ship */
-void checkHit(void);
+bool checkHit(void);
 
 /* taskGameRun
  * Handles the game logic task */
@@ -188,11 +184,4 @@ static void taskGameRun (void);
 /* taskDisplay
  * Handles the graphics logic */
 static void taskDisplay (void);
-
-
-// Pop oldest message from queue
-ir_state_t irQueuePop(void);
-
-// Add new message to queue
-void irQueueAdd(ir_state_t, char);
 #endif

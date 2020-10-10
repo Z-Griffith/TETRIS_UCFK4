@@ -16,22 +16,23 @@
 #include "ir_uart.h"
 #include "timer.h"
 #include "../fonts/font5x7_1.h"
+#include "ir_comms.h"
 #include "battleships.h"
 
 /* Globals */
 static state_t gameState;       // Variable to track state of game
 static bool isPlayerOne;        // Is this board player 1?
 static int stateTick = 0;       // Tracks length of time elapsed during a state
-static int irTick = 0;          // Tracks IR ticks rate
 static Targetter* targetter;    // Firing targetter cursor
 static Ship* currentShip;       // Current Ship for ship placing
 static int nShips;              // Total number of ships in Ship array
 static bool placementSuccess;   // Result of last ship placement TODO: Don't think this should be here...
 static int nShipsPlaced;        // Total number of Ships successfully placed
-static bool connectionSuccess;  // Result of initial IR connection TODO: Don't think this should be here...
 static Ship ships[MAX_SHIPS];   // Ship array of all ships
-static ir_state_t irLastMessageRecieved = NO_MESSAGE;
-static ir_state_t irSendQueue[IR_SEND_QUEUE_MAX];
+
+
+// DEBUG
+static int ledState = 0;
 
 /* Returns the vector addition of points a and b */
 tinygl_point_t vectorAdd(tinygl_point_t a, tinygl_point_t b)
@@ -281,6 +282,7 @@ void resetTargetter(Targetter* targetter)
 {
     targetter->pos = tinygl_point(DEFAULT_POS_X, DEFAULT_POS_Y);
     targetter->hasFired = false;
+    targetter->hasLocalTarget = false;
 }
 
 /* Encodes vector grid point into a char */
@@ -306,58 +308,22 @@ void launchMissile(Targetter* targetter)
     irQueueAdd(SENDING_COORDINATES, encodedCoordinates);
 }
 
-// Sets Player ID through IR connection
-bool ir_connect(void)
-{
-    bool success = false;
-    if (button_push_event_p(BUTTON1)) {
-        ir_uart_putc(CONNECTION_CONFIRM_CODE);
-        isPlayerOne = true; // Set this board player 1
-        success = true;
-    } else if (ir_uart_read_ready_p ()) {
-        char recieved = ir_uart_getc();
-        if (recieved == CONNECTION_CONFIRM_CODE) {
-            isPlayerOne = false; // Set this board player 2
-            success = true;
-        }
-    }
-    return success;
-}
 
 /* Checks whether the current targetter pos is currently on a ship */
-void checkHit(void)
+bool checkHit(void)
 {
+    bool hit = false;
     for (int i = 0; i < nShips; i++) {
         for (int j = 0; j < ships[i].nOffsets; j++) {
             if (isEqual(targetter->pos, getGridPosition(ships + i, j))) {
                 ships[i].hitStatus[j] = true;
+                hit = true;
             }
         }
     }
+    return hit;
 }
 
-// Pop oldest message from queue
-ir_state_t irQueuePop(void)
-{
-    ir_state_t front = irSendQueue[0];
-    for (int i = 1; i < IR_SEND_QUEUE_MAX; i++) {
-        *(irSendQueue + i - 1) = irSendQueue[i];
-    }
-    irSendQueue[IR_SEND_QUEUE_MAX-1] = NO_MESSAGE;
-    return front;
-}
-
-// Add new message to queue
-void irQueueAdd(ir_state_t messageConfig, char data)
-{
-    for (int i = 0; i < IR_SEND_QUEUE_MAX-1; i++) {
-        if (irSendQueue[i] == NO_MESSAGE) {
-            irSendQueue[i] = messageConfig;
-            irSendQueue[i+1] = data;
-        }
-    }
-
-}
 
 /* Handles game state change events
  * Displays messages on statechange*/
@@ -416,13 +382,9 @@ static void taskGameRun (void)
 
 
         case WAIT_FOR_CONNECT :
-            /* TODO: This kind of works but it doesn't handle any
-             * connection losses */
-            if (!connectionSuccess) {
-                connectionSuccess = ir_connect();
-            }
-            if (connectionSuccess) {
-                changeState(PLACE_SHIPS);
+            if (button_push_event_p(BUTTON1)) {
+                irQueueAdd(REQUEST_PLAYER_ONE);
+                irQueueAdd(WAIT_FOR_CONFIRM);
             }
             break;
 
@@ -464,21 +426,19 @@ static void taskGameRun (void)
             /* TODO: Display confirmation of hit or miss */
             /* TODO: Check number of ships surviving, etc */
 
-            if (ir_uart_read_ready_p ()) {
-                char recieved = ir_uart_getc ();
-                /* TODO: Implement message validity check? */
+            if (targetter->hasLocalTarget) {
+                if (checkHit() == true) {
+                    // A ship has been hit
+                    irQueueAdd(SEND_HIT, 0);
 
-                 /* TODO: Check ship hit */
+                    // TODO: Display "hit"
+                } ;
+                resetTargetter(targetter);
+                changeState(MY_TURN);
+            }
 
-                 tinygl_point_t impactPoint = decodeCharToPoint(recieved);
-                 /* TEST */
-                 targetter->pos = impactPoint;
 
-                 checkHit();
-                 resetTargetter(targetter);
-                 changeState(MY_TURN);
-             }
-             break;
+            break;
 
 
         case GAME_OVER :
@@ -544,22 +504,65 @@ static void taskDisplay(void)
 void taskIRSendRecieve (void)
 {
     bool isSending = false;
+    char str[15];
+    char data;
     if (irTick > LOOP_RATE / IR_RATE) {
+        ledState = !ledState;
         irTick = 0;
         isSending = true; // We're sending this tick
     }
-
-    if (isSending && irSendQueue[0] != NO_MESSAGE) {
-        ir_state_t newMessage = irQueuePop();
-        ir_uart_putc(newMessage);
-
+    if (isSending) {
+        irSend();
     } else { // We're recieving
         if (ir_uart_read_ready_p ()) {
-            irLastMessageRecieved = ir_uart_getc();
+            data = ir_uart_getc();
+            switch (irLastMessageRecieved) {
+                case NO_MESSAGE :
+                    irLastMessageRecieved = data;
+                    break;
+
+                case REQUEST_PLAYER_ONE :
+                    isPlayerOne = false;
+
+
+                case WAITING_FOR_RESPONSE :
+                    tinygl_clear();
+                    tinygl_text(str);
+                    irLastMessageRecieved = NO_MESSAGE;
+                    break;
+
+                case READY_TO_SEND :
+                    tinygl_clear();
+                    sprintf(str, "1 %c", data);
+                    tinygl_text(str);
+                    irLastMessageRecieved = NO_MESSAGE;
+                    break;
+
+                case CONFIRM :
+                    tinygl_clear();
+                    sprintf(str, "2 %c", data);
+                    tinygl_text(str);
+                    irLastMessageRecieved = NO_MESSAGE;
+                    break;
+
+                case SENDING_STATE :
+                    //irQueueAdd(lastMessageSent, lastData);
+                    break;
+
+                case SENDING_COORDINATES :
+                    break;
+
+                case SEND_HIT :
+                    break;
+
+                case SEND_MISS :
+                    break;
+
+            }
+
         }
     }
 }
-
 
 
 int main(void)
@@ -602,9 +605,8 @@ int main(void)
     // TODO: I don't think these should be globals...?
     nShipsPlaced = 0;
     placementSuccess = false;
-    connectionSuccess = false;
 
-    int ledState = 0;
+    ledState = 0;
     stateTick = 0;
     irTick = 0;
 
