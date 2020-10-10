@@ -68,7 +68,7 @@ void irTask(void);
 void irInit(int, int);
 
 // Checks whether confirmation was recieved for last message
-bool irWasLastMessageReceived(char);
+bool irWasSentMessageReceived(char);
 
 
 // Retrieve new message

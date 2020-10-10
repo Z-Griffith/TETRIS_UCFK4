@@ -25,12 +25,14 @@
 /* Enumerator for the control of the current state of the
  * game */
 typedef enum state {
-    START_SCREEN,       // Display game title
-    WAIT_FOR_CONNECT,   // Connect with other board
-    PLACE_SHIPS,        // Place ships on board
-    MY_TURN,            // Run this boards turn to fire
-    OPPONENT_TURN,      // Wait for other boards turn to fire
-    GAME_OVER           // Game win/loss
+    START_SCREEN,           // Display game title
+    WAIT_FOR_CONNECT,       // Connect with other board
+    PLACE_SHIPS,            // Place ships on board
+    MY_TURN,                // Run this boards turn to fire
+    WAIT_FOR_HIT_RECIEVE,   // Wait until missile results recieved
+    OPPONENT_TURN,          // Wait for other boards turn to fire
+    WAIT_FOR_HIT_SEND,       // Wait until missile results sent
+    GAME_OVER               // Game win/loss
     } state_t;
 
 

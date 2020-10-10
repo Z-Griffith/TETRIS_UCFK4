@@ -265,7 +265,7 @@ char encodePointToChar(tinygl_point_t point)
     return ((BOTTOM_BOUND + 1) * point.y) + point.x;
 }
 
-/* Decodes char into grid point */
+/* Decodes char into grid point */ 
 tinygl_point_t decodeCharToPoint(char c)
 {
     int x = c % (BOTTOM_BOUND+1);
@@ -320,9 +320,18 @@ void changeState(state_t newState)
             tinygl_text(" Your turn ");
             break;
 
+        case WAIT_FOR_HIT_RECIEVE :
+            tinygl_text(" waiting.. ");
+            break;
+
         case OPPONENT_TURN :
             tinygl_clear();
             tinygl_text(" Opponents turn ");
+            break;
+            
+        case WAIT_FOR_HIT_SEND :
+            tinygl_clear();
+            tinygl_text(" waiting.. ");
             break;
 
         case GAME_OVER :
@@ -354,7 +363,7 @@ static void taskGameRun (void)
             if (button_push_event_p(BUTTON1)) {
                 irRequestPlayerOne();
                 
-            } else if (irWasLastMessageReceived(REQUEST_PLAYER_ONE)) {
+            } else if (irWasSentMessageReceived(REQUEST_PLAYER_ONE)) {
                 // Make us player 1
                 isPlayerOne = true;
                 changeState(PLACE_SHIPS);
@@ -402,8 +411,12 @@ static void taskGameRun (void)
                 // Fire missile at current targetter pos
                 char encodedCoordinates = encodePointToChar(targetter->pos);
                 irSendMissile(encodedCoordinates);
+                changeState(WAIT_FOR_HIT_RECIEVE);
             }
+            break;
             
+            
+        case WAIT_FOR_HIT_RECIEVE :
             newMessage = irGetMessage();
             if (newMessage == SEND_HIT) {
                 
@@ -415,9 +428,7 @@ static void taskGameRun (void)
                 // TODO: Display "miss"
                 changeState(OPPONENT_TURN);
             }
-            
             break;
-            
 
         case OPPONENT_TURN :
             /* TODO: Display confirmation of hit or miss */
@@ -427,25 +438,26 @@ static void taskGameRun (void)
             if (newMessage < NO_MESSAGE) {  // Must be coordinates
                 tinygl_point_t impactPoint = decodeCharToPoint(newMessage);
                 if (checkShipHit(impactPoint)) {
-                    // A ship has been hit
+                    pacer_wait(); // TODO: Shouldn't be here
                     irSendHit();
+                    changeState(WAIT_FOR_HIT_SEND);
                     // TODO: Display "hit"
                 } else {
                     // It's a miss
                     irSendMiss();
+                    changeState(WAIT_FOR_HIT_SEND);
                     // TODO: Display "miss"
                 }
+                
+            }
+            break;
+            
+        case WAIT_FOR_HIT_SEND :
+            if (irWasSentMessageReceived(SEND_HIT) || irWasSentMessageReceived(SEND_MISS)) {
                 changeState(MY_TURN);
             }
-            
-            
-            // TODO: Make this work properly
-            //if (irWasLastMessageReceived(SEND_HIT) || irWasLastMessageReceived(SEND_MISS)) {
-                //changeState(MY_TURN);
-            //}
-            
-            
             break;
+        
 
 
         case GAME_OVER :
@@ -487,6 +499,10 @@ static void taskDisplay(void)
                 drawTargetter(targetter);
             }
             break;
+            
+            
+        case WAIT_FOR_HIT_RECIEVE :
+            break;
 
         case OPPONENT_TURN :
             // Display message for n ticks, then display board
@@ -495,6 +511,9 @@ static void taskDisplay(void)
                 tinygl_clear();
                 drawBoard(ships, nShips);
             }
+            break;
+            
+        case WAIT_FOR_HIT_SEND :
             break;
 
 

@@ -120,7 +120,7 @@ void irInit(int loopRate, int irRate)
 }
 
 // Checks whether confirmation was recieved for last message
-bool irWasMessageRecieved(char sent_message) 
+bool irWasSentMessageReceived(char sent_message) 
 {
     return (irHandler.wasLastSentConfirmed && irHandler.lastMessageSent == sent_message); // TODO: Conflicting
 }
@@ -128,21 +128,26 @@ bool irWasMessageRecieved(char sent_message)
 // Retrieve new message
 char irGetMessage(void) {
     char newMessage = irHandler.lastMessageRecieved;
-    //bool hasNewMessage = (newMessage != NO_MESSAGE  // TODO: Check
-               // && irHandler.isConfirmationSent);
+    bool hasNewMessage = (newMessage != NO_MESSAGE  // TODO: Check
+               && irHandler.isConfirmationSent);
     
-    return newMessage;
+    if (hasNewMessage) {
+        return newMessage;
+    } else {
+        return NO_MESSAGE;
+    }
 }
 
 
+
 // Returns last message sent over IR
-char GetLastMessageSent(void)
+char irGetLastMessageSent(void)
 {
     return irHandler.lastMessageSent;
 }
 
 // Sends missile targetting coordinates to other board
-void SendMissile(char encodedCoords) 
+void irSendMissile(char encodedCoords) 
 {
     irHandler.messageToSend = encodedCoords;
 }
