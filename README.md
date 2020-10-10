@@ -13,8 +13,7 @@ Scott Li (gli65@uclive.ac.nz), Sam Heslip (she119@uclive.ac.nz)
 # Date Started
 29/09/2020
 
-## Usage
-
+# How to play
 From within this directory, the following commands can be run
 
 - `make`: Compiles source code and builds object files
@@ -23,11 +22,3 @@ From within this directory, the following commands can be run
 
 Run `make program` to start playing!
 
-
-# How to play
-
-0. start game
-1. 
-2. 
-3. 
-```
