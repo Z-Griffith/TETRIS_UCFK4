@@ -22,7 +22,8 @@ typedef enum ir_state {
     REQUEST_PLAYER_ONE = 102,
     SEND_HIT = 104,
     SEND_MISS = 105,
-    MESSAGE_SENT = 106
+    MESSAGE_SENT = 106,
+    MESSAGE_READ = 107
 } ir_state_t;
 
 // Defines the IR handler struct
@@ -30,6 +31,7 @@ typedef struct ir_handler_t {
     char messageToSend;
     char lastMessageSent;
     char lastMessageRecieved;
+    bool hasNewMessage;
     bool wasLastSentConfirmed;
     bool isConfirmationSent;
     int nResendAttempts;
@@ -43,6 +45,8 @@ typedef struct ir_handler_t {
 // Recieve an IR message
 void irRecieveMessage(void);
 
+// -----------------------------
+void irMarkMessageAsRead(void);
 
 // Send a IR message
 void irSendMessage(char);
@@ -72,7 +76,7 @@ bool irWasSentMessageReceived(char);
 
 
 // Retrieve new message
-char irGetMessage(void);
+char irGetLastMessageRecieved(void);
 
 
 // Returns last message sent over IR

@@ -41,6 +41,8 @@ void irSendConfirmationMessage(void) {
     for (int i = 0; i < 3; i++) { // Send 3 confirms
         ir_uart_putc(CONFIRM);
     }
+    
+    irHandler.hasNewMessage = true;
 }
 
 
@@ -110,6 +112,7 @@ void irInit(int loopRate, int irRate)
     irHandler.messageToSend = NO_MESSAGE;
     irHandler.lastMessageSent = NO_MESSAGE;
     irHandler.lastMessageRecieved = NO_MESSAGE;
+    irHandler.hasNewMessage = false;
     irHandler.wasLastSentConfirmed = false;
     irHandler.isConfirmationSent = false;
     irHandler.nResendAttempts = 0;
@@ -120,22 +123,24 @@ void irInit(int loopRate, int irRate)
 }
 
 // Checks whether confirmation was recieved for last message
-bool irWasSentMessageReceived(char sent_message) 
+bool irWasSentMessageReceived(char message) 
 {
-    return (irHandler.wasLastSentConfirmed && irHandler.lastMessageSent == sent_message); // TODO: Conflicting
+    return (irHandler.wasLastSentConfirmed && irHandler.lastMessageSent == message); // TODO: Conflicting
 }
 
 // Retrieve new message
-char irGetMessage(void) {
+char irGetLastMessageRecieved(void) {
     char newMessage = irHandler.lastMessageRecieved;
-    bool hasNewMessage = (newMessage != NO_MESSAGE  // TODO: Check
-               && irHandler.isConfirmationSent);
     
-    if (hasNewMessage) {
+    if (irHandler.hasNewMessage) {
         return newMessage;
     } else {
         return NO_MESSAGE;
     }
+}
+
+void irMarkMessageAsRead(void) {
+    irHandler.hasNewMessage = false;
 }
 
 

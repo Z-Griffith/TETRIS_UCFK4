@@ -321,7 +321,7 @@ void changeState(state_t newState)
             break;
 
         case WAIT_FOR_HIT_RECIEVE :
-            tinygl_text(" waiting.. ");
+            tinygl_text(" waiting for hit.. ");
             break;
 
         case OPPONENT_TURN :
@@ -331,7 +331,7 @@ void changeState(state_t newState)
             
         case WAIT_FOR_HIT_SEND :
             tinygl_clear();
-            tinygl_text(" waiting.. ");
+            tinygl_text(" waiting for confirm.. ");
             break;
 
         case GAME_OVER :
@@ -348,7 +348,7 @@ void changeState(state_t newState)
  * Handles the game logic task */
 static void taskGameRun (void)
 {
-    char newMessage; // TODO: ???!
+    char newMessage = '\0'; // TODO: ???!
     
     
     switch (gameState) {
@@ -368,8 +368,9 @@ static void taskGameRun (void)
                 isPlayerOne = true;
                 changeState(PLACE_SHIPS);
                 
-            } else if (irGetMessage() == REQUEST_PLAYER_ONE) {
+            } else if (irGetLastMessageRecieved() == REQUEST_PLAYER_ONE) {
                 // Make us player 2
+                irMarkMessageAsRead();
                 isPlayerOne = false;
                 changeState(PLACE_SHIPS);
             }
@@ -417,26 +418,28 @@ static void taskGameRun (void)
             
             
         case WAIT_FOR_HIT_RECIEVE :
-            newMessage = irGetMessage();
-            if (newMessage == SEND_HIT) {
-                
-                // TODO: Display "hit"
-                
+            newMessage = irGetLastMessageRecieved();
+            if (newMessage == SEND_HIT) {  // TODO: Display "hit"
+                irMarkMessageAsRead();
                 changeState(OPPONENT_TURN);
-            } else if (newMessage == SEND_MISS) {
-                
-                // TODO: Display "miss"
+            } else if (newMessage == SEND_MISS) { // TODO: Display "miss"
+                irMarkMessageAsRead();
+                changeState(OPPONENT_TURN);
+            } else if (stateTick > 10000) {
+                // Exceeded wait time, count as miss
                 changeState(OPPONENT_TURN);
             }
+                
             break;
 
         case OPPONENT_TURN :
             /* TODO: Display confirmation of hit or miss */
             /* TODO: Check number of ships surviving, etc */
             
-            newMessage = irGetMessage();
+            newMessage = irGetLastMessageRecieved();
             if (newMessage < NO_MESSAGE) {  // Must be coordinates
                 tinygl_point_t impactPoint = decodeCharToPoint(newMessage);
+                irMarkMessageAsRead();
                 if (checkShipHit(impactPoint)) {
                     pacer_wait(); // TODO: Shouldn't be here
                     irSendHit();
