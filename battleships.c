@@ -564,6 +564,47 @@ void taskIRSendRecieve (void)
     }
 }
 
+/* Check ship sink or not */
+bool checkShipSink(ship* checkShip)
+{
+    bool checkSink = true;
+    for (int i = 0; i < checkShip.nOffsets; i++) {
+        if (ships.hitStatus[i] = true) {
+            checkSink = ture;
+        } else {
+            checkSink = false;
+            break;
+        }
+    }
+    return checkSink;
+}
+
+/* Check Who is the winner */
+bool checkWin (void) {
+    int playerShipNum = 0;
+    for (int i = 0; i < nShips; i++) {
+        if (!checkShipSink(ships[i])) {
+            playerShipNum++;
+        }
+    }
+    return playerShipNum > 0;
+
+}
+
+/* Show winner*/
+void showWinner(int player)
+{
+    tinygl_clear();
+    char* message = "";
+    if (player == 1) {
+        message = " Winner is player 1";
+
+    } else {
+        message = " Winner is player 2";
+    }
+    tinygl_text(message);
+}
+
 
 int main(void)
 {
