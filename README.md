@@ -23,3 +23,11 @@ From within this directory, the following commands can be run
 Run `make program` to start playing!
 
 # How to play game
+```Bash
+## 4 ship models
+1. Three length 'L' ship ![Battleships Logo](resources/L_ship.png)
+2. Three length 'I' ship ![Battleships Logo](resources/I_ship.png)
+3. Two length 'i' ship ![Battleships Logo](resources/i_ships.png)
+4. One length 'O' ship ![Battleships Logo](resources/O_ship.png)
+```
+1.**Placing The Ships**: 
