@@ -417,6 +417,12 @@ static void taskGameRun (void)
             }
 
 
+            // if checkWin is zero The statement change to game over
+            if (checkWin() == false) {
+                changeState(GAME_OVER);
+            }
+
+
             break;
 
 
