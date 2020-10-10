@@ -163,7 +163,7 @@ bool placeShip(Ship* ship, Ship* ships, int nShips)
         ship->isActive = 0;
         ship->isPlaced = 1;
     }
-    return isValidPlacement;
+    return isValidPlacement; 
 }
 
 
@@ -203,9 +203,6 @@ void checkNavswitchMoveTargetter(Targetter* targetter)
     }
     if (navswitch_push_event_p(NAVSWITCH_SOUTH)) {
         moveTargetter(targetter, tinygl_point(0,1));
-    }
-    if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
-        launchMissile(targetter);
     }
 }
 
@@ -260,8 +257,6 @@ void drawTargetter(Targetter* targetter)
 void resetTargetter(Targetter* targetter)
 {
     targetter->pos = tinygl_point(DEFAULT_POS_X, DEFAULT_POS_Y);
-    targetter->hasFired = false;
-    targetter->hasLocalTarget = false;
 }
 
 /* Encodes vector grid point into a char */
@@ -270,7 +265,7 @@ char encodePointToChar(tinygl_point_t point)
     return ((BOTTOM_BOUND + 1) * point.y) + point.x;
 }
 
-/* Decodes char into grid point */
+/* Decodes char into grid point */ 
 tinygl_point_t decodeCharToPoint(char c)
 {
     int x = c % (BOTTOM_BOUND+1);
@@ -278,23 +273,17 @@ tinygl_point_t decodeCharToPoint(char c)
     return tinygl_point(x, y);
 }
 
-/* Sends the current targetter position as a char to the other board */
-void launchMissile(Targetter* targetter)
-{
-    targetter->hasFired = true;
-    char encodedCoordinates = encodePointToChar(targetter->pos);
-    /* Send targetting coordinates to other board for fire */
-    irQueueAdd(SENDING_COORDINATES, encodedCoordinates);
-}
 
-
-/* Checks whether the current targetter pos is currently on a ship */
-bool checkHit(void)
+/* Checks whether point is currently on a ship and removes 
+ * a chunk of the ship that was hit (the offset hitStatus
+ * becomes true) 
+ */
+bool checkShipHit(tinygl_point_t impactPoint)
 {
     bool hit = false;
     for (int i = 0; i < nShips; i++) {
         for (int j = 0; j < ships[i].nOffsets; j++) {
-            if (isEqual(targetter->pos, getGridPosition(ships + i, j))) {
+            if (isEqual(impactPoint, getGridPosition(ships + i, j))) {
                 ships[i].hitStatus[j] = true;
                 hit = true;
             }
@@ -304,6 +293,7 @@ bool checkHit(void)
 }
 
 
+
 /* Handles game state change events
  * Displays messages on statechange*/
 void changeState(state_t newState)
@@ -311,31 +301,37 @@ void changeState(state_t newState)
     switch(newState) {
         case START_SCREEN :
             tinygl_clear();
-            tinygl_text(" BATTLESHIPS: Push to start");
+            tinygl_text(" BATTLESHIPS ");
             break;
 
         case WAIT_FOR_CONNECT :
             tinygl_clear();
-            tinygl_text(" Player 1 push");
+            tinygl_text(" Push to connect ");
             break;
 
         case PLACE_SHIPS :
             tinygl_clear();
-            if (isPlayerOne) {
-                tinygl_text("P-1 Place ships");
-            } else {
-                tinygl_text("P-2 Place ships");
-            }
+            tinygl_text(" Place ships ");
             break;
 
         case MY_TURN :
+            resetTargetter(targetter);
             tinygl_clear();
-            tinygl_text("Your turn!");
+            tinygl_text(" Your turn ");
+            break;
+
+        case WAIT_FOR_HIT_RECIEVE :
+            tinygl_text(" waiting for hit.. ");
             break;
 
         case OPPONENT_TURN :
             tinygl_clear();
-            tinygl_text("Opponents turn!");
+            tinygl_text(" Opponents turn ");
+            break;
+            
+        case WAIT_FOR_HIT_SEND :
+            tinygl_clear();
+            tinygl_text(" waiting for confirm.. ");
             break;
 
         case GAME_OVER :
@@ -352,6 +348,9 @@ void changeState(state_t newState)
  * Handles the game logic task */
 static void taskGameRun (void)
 {
+    char newMessage = '\0'; // TODO: ???!
+    
+    
     switch (gameState) {
         case START_SCREEN:
             if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
@@ -362,9 +361,21 @@ static void taskGameRun (void)
 
         case WAIT_FOR_CONNECT :
             if (button_push_event_p(BUTTON1)) {
-                irQueueAdd(REQUEST_PLAYER_ONE); //
-                irQueueAdd(WAIT_FOR_CONFIRM);
+                irRequestPlayerOne();
+                
+            } else if (irWasSentMessageReceived(REQUEST_PLAYER_ONE)) {
+                // Make us player 1
+                isPlayerOne = true;
+                changeState(PLACE_SHIPS);
+                
+            } else if (irGetLastMessageRecieved() == REQUEST_PLAYER_ONE) {
+                // Make us player 2
+                irMarkMessageAsRead();
+                isPlayerOne = false;
+                changeState(PLACE_SHIPS);
             }
+
+
             break;
 
 
@@ -380,7 +391,7 @@ static void taskGameRun (void)
                 }
             }
 
-            checkNavswitchMoveShip(currentShip); // I don't like this much...
+            checkNavswitchMoveShip(currentShip); // TODO: I don't like this much...
 
             // If all ships placed, start game
             if (nShipsPlaced == nShips) {
@@ -391,39 +402,70 @@ static void taskGameRun (void)
                 }
             }
             break;
+            
 
         case MY_TURN :
-            /* TODO: Display confirmation of hit or miss */
             checkNavswitchMoveTargetter(targetter);
-            if (targetter->hasFired) {
-                resetTargetter(targetter);
+           
+           
+            if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
+                // Fire missile at current targetter pos
+                char encodedCoordinates = encodePointToChar(targetter->pos);
+                irSendMissile(encodedCoordinates);
+                changeState(WAIT_FOR_HIT_RECIEVE);
+            }
+            break;
+            
+            
+        case WAIT_FOR_HIT_RECIEVE :
+            newMessage = irGetLastMessageRecieved();
+            if (newMessage == SEND_HIT) {  // TODO: Display "hit"
+                irMarkMessageAsRead();
+                changeState(OPPONENT_TURN);
+            } else if (newMessage == SEND_MISS) { // TODO: Display "miss"
+                irMarkMessageAsRead();
+                changeState(OPPONENT_TURN);
+            } else if (stateTick > 10000) {
+                // Exceeded wait time, count as miss
                 changeState(OPPONENT_TURN);
             }
+                
             break;
 
         case OPPONENT_TURN :
             /* TODO: Display confirmation of hit or miss */
             /* TODO: Check number of ships surviving, etc */
-
-            if (targetter->hasLocalTarget) {
-                if (checkHit() == true) {
-                    // A ship has been hit
-                    irQueueAdd(SEND_HIT, 0);
-
+            
+            newMessage = irGetLastMessageRecieved();
+            if (newMessage < NO_MESSAGE) {  // Must be coordinates
+                tinygl_point_t impactPoint = decodeCharToPoint(newMessage);
+                irMarkMessageAsRead();
+                if (checkShipHit(impactPoint)) {
+                    pacer_wait(); // TODO: Shouldn't be here
+                    irSendHit();
+                    changeState(WAIT_FOR_HIT_SEND);
                     // TODO: Display "hit"
-                } ;
-                resetTargetter(targetter);
-                changeState(MY_TURN);
+                } else {
+                    // It's a miss
+                    irSendMiss();
+                    changeState(WAIT_FOR_HIT_SEND);
+                    // TODO: Display "miss"
+                }
+                
             }
-
-
+            break;
+            
+        case WAIT_FOR_HIT_SEND :
             // if checkWin is zero The statement change to game over
             if (checkWin() == false) {
                 changeState(GAME_OVER);
             }
 
-
+            if (irWasSentMessageReceived(SEND_HIT) || irWasSentMessageReceived(SEND_MISS)) {
+                changeState(MY_TURN);
+            }
             break;
+        
 
 
         case GAME_OVER :
@@ -465,6 +507,10 @@ static void taskDisplay(void)
                 drawTargetter(targetter);
             }
             break;
+            
+            
+        case WAIT_FOR_HIT_RECIEVE :
+            break;
 
         case OPPONENT_TURN :
             // Display message for n ticks, then display board
@@ -473,6 +519,9 @@ static void taskDisplay(void)
                 tinygl_clear();
                 drawBoard(ships, nShips);
             }
+            break;
+            
+        case WAIT_FOR_HIT_SEND :
             break;
 
 
@@ -484,78 +533,14 @@ static void taskDisplay(void)
 
 }
 
-/* taskIRSendRecieve
- * Handles the sending and recieving of IR information */
-void taskIRSendRecieve (void)
-{
-    bool isSending = false;
-    char str[15];
-    char data;
-    if (irTick > LOOP_RATE / IR_RATE) {
-        ledState = !ledState;
-        irTick = 0;
-        isSending = true; // We're sending this tick
-    }
-    if (isSending) {
-        irSend();
-    } else { // We're recieving
-        if (ir_uart_read_ready_p ()) {
-            data = ir_uart_getc();
-            switch (irLastMessageRecieved) {
-                case NO_MESSAGE :
-                    irLastMessageRecieved = data;
-                    break;
-
-                case REQUEST_PLAYER_ONE :
-                    isPlayerOne = false;
-
-
-                case WAITING_FOR_RESPONSE :
-                    tinygl_clear();
-                    tinygl_text(str);
-                    irLastMessageRecieved = NO_MESSAGE;
-                    break;
-
-                case READY_TO_SEND :
-                    tinygl_clear();
-                    sprintf(str, "1 %c", data);
-                    tinygl_text(str);
-                    irLastMessageRecieved = NO_MESSAGE;
-                    break;
-
-                case CONFIRM :
-                    tinygl_clear();
-                    sprintf(str, "2 %c", data);
-                    tinygl_text(str);
-                    irLastMessageRecieved = NO_MESSAGE;
-                    break;
-
-                case SENDING_STATE :
-                    //irQueueAdd(lastMessageSent, lastData);
-                    break;
-
-                case SENDING_COORDINATES :
-                    break;
-
-                case SEND_HIT :
-                    break;
-
-                case SEND_MISS :
-                    break;
-
-            }
-
-        }
-    }
-}
 
 /* Check ship sink or not */
-bool checkShipSink(ship* checkShip)
+bool checkShipSink(Ship* checkShip)
 {
     bool checkSink = true;
-    for (int i = 0; i < checkShip.nOffsets; i++) {
-        if (ships.hitStatus[i] = true) {
-            checkSink = ture;
+    for (int i = 0; i < checkShip->nOffsets; i++) {
+        if (ships->hitStatus[i] == true) {
+            checkSink = true;
         } else {
             checkSink = false;
             break;
@@ -568,7 +553,7 @@ bool checkShipSink(ship* checkShip)
 bool checkWin (void) {
     int playerShipNum = 0;
     for (int i = 0; i < nShips; i++) {
-        if (!checkShipSink(ships[i])) {
+        if (!checkShipSink(&ships[i])) {
             playerShipNum++;
         }
     }
@@ -604,9 +589,10 @@ int main(void)
     tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
     pacer_init(LOOP_RATE);
     ir_uart_init();
-    for (int i = 0; i < IR_SEND_QUEUE_MAX; i++) {
-        irSendQueue[i] = NO_MESSAGE;
-    }
+    
+    irInit(LOOP_RATE, IR_RATE);
+    
+    
     changeState(START_SCREEN);
 
     /* Configure ships to use */
@@ -619,8 +605,7 @@ int main(void)
 
     /* Build firing targetter for MY_TURN mode */
     Targetter firing_targetter = {
-        .pos={DEFAULT_POS_X, DEFAULT_POS_Y},
-        .hasFired = false
+        .pos={DEFAULT_POS_X, DEFAULT_POS_Y}
     };
     targetter = &firing_targetter;
 
@@ -634,7 +619,7 @@ int main(void)
 
     ledState = 0;
     stateTick = 0;
-    irTick = 0;
+    int gameTick = 0;
 
     while(1) {
         pacer_wait();
@@ -643,15 +628,15 @@ int main(void)
 
         taskGameRun(); // Run through game logic
         taskDisplay(); // Run through display logic
-        taskIRSendRecieve(); // Send and recieve data
+        irTask();
 
         stateTick++; // Increment stateTick for inter state timing
 
-        irTick++; // Increment irTick for ir send/recieve timing
 
         // Flash LED
-        if (irTick > LOOP_RATE / IR_RATE) {
-            //tick = 0;
+        gameTick++;
+        if (gameTick > LOOP_RATE / 2) {
+            gameTick = 0;
             ledState = !ledState;
         }
         led_set(LED1, ledState);

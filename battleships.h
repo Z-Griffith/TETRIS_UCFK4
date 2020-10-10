@@ -20,19 +20,19 @@
 #define MAX_SHIP_OFFSETS 4
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
-#define IR_SEND_QUEUE_MAX 10
-#define CONNECTION_CONFIRM_CODE 101
 
 
 /* Enumerator for the control of the current state of the
  * game */
 typedef enum state {
-    START_SCREEN,       // Display game title
-    WAIT_FOR_CONNECT,   // Connect with other board
-    PLACE_SHIPS,        // Place ships on board
-    MY_TURN,            // Run this boards turn to fire
-    OPPONENT_TURN,      // Wait for other boards turn to fire
-    GAME_OVER           // Game win/loss
+    START_SCREEN,           // Display game title
+    WAIT_FOR_CONNECT,       // Connect with other board
+    PLACE_SHIPS,            // Place ships on board
+    MY_TURN,                // Run this boards turn to fire
+    WAIT_FOR_HIT_RECIEVE,   // Wait until missile results recieved
+    OPPONENT_TURN,          // Wait for other boards turn to fire
+    WAIT_FOR_HIT_SEND,       // Wait until missile results sent
+    GAME_OVER               // Game win/loss
     } state_t;
 
 
@@ -67,8 +67,6 @@ typedef struct Ship_t {
 
 typedef struct Targetter_t {
     tinygl_point_t pos;
-    bool hasFired; // Has this targetter fired?
-    bool hasLocalTarget; // Does this targetter have a local target?
 } Targetter;
 
 Ship L_ship = {
@@ -165,17 +163,13 @@ char encodePointToChar(tinygl_point_t);
 /* Decodes char into grid point */
 tinygl_point_t decodeCharToPoint(char);
 
-/* Sends the current targetter position as a char to the other board */
-void launchMissile(Targetter*);
 
 /* Changes game state to new state */
 void changeState(state_t);
 
-// Sets Player ID through IR connection
-bool ir_connect(void);
 
-/* Checks whether the current targetter pos is currently on a ship */
-bool checkHit(void);
+/* Checks whether point is currently on a ship */
+bool checkShipHit(tinygl_point_t);
 
 /* taskGameRun
  * Handles the game logic task */

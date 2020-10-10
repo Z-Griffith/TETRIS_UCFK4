@@ -1,43 +1,179 @@
-/** @file   battleships.c
+/** @file   ir_comms.c
     @author S. Li (gli65), S.A. Heslip (she119)
-    @date   10 Oct 2020
+    @date   11 Oct 2020
 */
 
+
 #include <stdlib.h>
-#include "ir_comms.h"
 #include "ir_uart.h"
+#include "ir_comms.h"
+
+static irHandler_t irHandler;
 
 
-static char irLastMessageRecieved = NO_MESSAGE;
-static char irSendQueue[IR_SEND_QUEUE_MAX];
-static int irTick = 0;
-
-// Pop oldest message from queue
-char irQueuePop(void)
+// Recieve an IR message
+void irRecieveMessage(void)
 {
-    ir_state_t front = irSendQueue[0];
-    for (int i = 1; i < IR_SEND_QUEUE_MAX; i++) {
-        irSendQueue[i-1] = irSendQueue[i];
+    if (ir_uart_read_ready_p ()) {
+        // Recieve the new message
+        char message = ir_uart_getc();
+        if (!(message == CONFIRM)) {
+            irHandler.lastMessageRecieved = message;
+            irHandler.isConfirmationSent = false;
+        } // else ignore the confirm and wait for resend
     }
-    irSendQueue[IR_SEND_QUEUE_MAX-1] = NO_MESSAGE;
-    return front;
 }
 
-// Pop and send the first item in the queue
-void irSend(void)
-{
-    char sendingChar = irQueuePop();
-    ir_uart_putc(sendingChar);
+// Send a IR message
+void irSendMessage(char message) {
+    while (!ir_uart_write_ready_p ()) {
+        continue;
+    }
+    
+    irHandler.lastMessageSent = message;
+    ir_uart_putc(message);
+    irHandler.messageToSend = MESSAGE_SENT;
+    irHandler.wasLastSentConfirmed = false;
 }
 
-// Add new message to queue
-void irQueueAdd(ir_state_t messageConfig, char data)
+// Send confirmation messages to other board
+void irSendConfirmationMessage(void) {
+    for (int i = 0; i < 3; i++) { // Send 3 confirms
+        ir_uart_putc(CONFIRM);
+    }
+    
+    irHandler.hasNewMessage = true;
+}
+
+
+// Checks whether a CONFIRM has been sent back
+void irCheckForConfirmationMessage(void)
 {
-    for (int i = 0; i < IR_SEND_QUEUE_MAX-1; i++) {
-        if (irSendQueue[i] == NO_MESSAGE) {
-            irSendQueue[i] = messageConfig;
-            irSendQueue[i+1] = data;
+    if (ir_uart_read_ready_p()) {
+        // Recieve the (hopefully) confirmation message
+        char newMessage = ir_uart_getc();
+        if (newMessage == CONFIRM) {
+            // The last message has been confirmed
+            
+            irHandler.wasLastSentConfirmed = true;
+            irHandler.watchdogTick = 0;
         }
     }
 }
+
+// Defines the irTask machine, run through each frame
+void irTask(void)
+{
+    irHandler.sendTick++;
+    
+    bool isSending = (irHandler.sendTick > irHandler.loopRate / irHandler.irRate);
+    bool hasMessageToBeSent = irHandler.messageToSend != MESSAGE_SENT; // TODO: Make parameter .messageSent?
+    
+    if (irHandler.wasLastSentConfirmed == false) {
+        // The last message send is yet to be confirmed
+        irHandler.watchdogTick++;
+        if (irHandler.watchdogTick > IR_WATCHDOG_MAX) {
+            // Exeeded timer, resend last message
+            irHandler.watchdogTick = 0;
+            irHandler.nResendAttempts++;
+            irSendMessage(irHandler.lastMessageSent);
+            
+            if (irHandler.nResendAttempts > IR_RESEND_ATTEMPTS) {
+                // TODO: Could wait a random amount of time and try again?
+                // Exeeded max resend attempts, give up
+                irHandler.nResendAttempts = 0;
+                irHandler.wasLastSentConfirmed = true;
+            }
+            
+        } else {
+            // Check for confirmation response
+            irCheckForConfirmationMessage();
+        }
+        
+    } else if (irHandler.isConfirmationSent == false) {
+        // We need to send a confirmation message immediately
+        irSendConfirmationMessage();
+        irHandler.isConfirmationSent = true;
+        
+    } else if (isSending && hasMessageToBeSent) {
+        // There's a message waiting, SEND IT
+        irHandler.sendTick = 0; // Reset sending tick
+        irSendMessage(irHandler.messageToSend);
+            
+    } else {
+        // Nothing else to do, wait for a message
+        irRecieveMessage();
+    }
+}
+
+// Initialises the irHandler to defaults
+void irInit(int loopRate, int irRate)
+{
+    irHandler.messageToSend = NO_MESSAGE;
+    irHandler.lastMessageSent = NO_MESSAGE;
+    irHandler.lastMessageRecieved = NO_MESSAGE;
+    irHandler.hasNewMessage = false;
+    irHandler.wasLastSentConfirmed = false;
+    irHandler.isConfirmationSent = false;
+    irHandler.nResendAttempts = 0;
+    irHandler.sendTick = 0;
+    irHandler.watchdogTick = 0;
+    irHandler.loopRate = loopRate;
+    irHandler.irRate = irRate;
+}
+
+// Checks whether confirmation was recieved for last message
+bool irWasSentMessageReceived(char message) 
+{
+    return (irHandler.wasLastSentConfirmed && irHandler.lastMessageSent == message); // TODO: Conflicting
+}
+
+// Retrieve new message
+char irGetLastMessageRecieved(void) {
+    char newMessage = irHandler.lastMessageRecieved;
+    
+    if (irHandler.hasNewMessage) {
+        return newMessage;
+    } else {
+        return NO_MESSAGE;
+    }
+}
+
+void irMarkMessageAsRead(void) {
+    irHandler.hasNewMessage = false;
+}
+
+
+
+// Returns last message sent over IR
+char irGetLastMessageSent(void)
+{
+    return irHandler.lastMessageSent;
+}
+
+// Sends missile targetting coordinates to other board
+void irSendMissile(char encodedCoords) 
+{
+    irHandler.messageToSend = encodedCoords;
+}
+
+// Sends a request to the other board requesting player 1
+void irRequestPlayerOne(void) 
+{
+    irHandler.messageToSend = REQUEST_PLAYER_ONE;
+}
+
+// Sends the other board a notification saying last missile hit
+void irSendHit(void) 
+{
+    irHandler.messageToSend = SEND_HIT;
+}
+
+// Sends the other board a notification saying last missile missed
+void irSendMiss(void) 
+{
+    irHandler.messageToSend = SEND_MISS;
+}
+
+
 
