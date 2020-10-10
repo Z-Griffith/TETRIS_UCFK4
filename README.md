@@ -3,7 +3,10 @@ ENCE260 UCFK4 Assignment
 
 # Game
 ## ![Battleships Logo](resources/logo.png) BATTLESHIPS
-1.Battleship (also Battleships or Sea Battle[1]) is a strategy type guessing    game for two players. It is played on ruled grids (paper or board) on which each player's fleet of ships (including battleships) are marked. The locations of the fleets are concealed from the other player. Players alternate turns calling "shots" at the other player's ships, and the objective of the game is to destroy the opposing player's fleet.
+```Bash
+0.A 2-player battleships game developed to run on the UCFK4 micro-controller.
+```
+
 
 
 
@@ -20,7 +23,7 @@ Scott Li (gli65@uclive.ac.nz), Sam Heslip (she119@uclive.ac.nz)
 2. Make program
 ```
 # How to play
-```Bash
+
 0. start game
 1. 
 2. 
