@@ -163,7 +163,7 @@ bool placeShip(Ship* ship, Ship* ships, int nShips)
         ship->isActive = 0;
         ship->isPlaced = 1;
     }
-    return isValidPlacement;
+    return isValidPlacement; 
 }
 
 
@@ -274,8 +274,11 @@ tinygl_point_t decodeCharToPoint(char c)
 }
 
 
-/* Checks whether point is currently on a ship */
-bool checkShipHit(tinygl_point_t impactPoint, Ship* hitShip)
+/* Checks whether point is currently on a ship and removes 
+ * a chunk of the ship that was hit (the offset hitStatus
+ * becomes true) 
+ */
+bool checkShipHit(tinygl_point_t impactPoint)
 {
     bool hit = false;
     for (int i = 0; i < nShips; i++) {
@@ -283,24 +286,12 @@ bool checkShipHit(tinygl_point_t impactPoint, Ship* hitShip)
             if (isEqual(impactPoint, getGridPosition(ships + i, j))) {
                 ships[i].hitStatus[j] = true;
                 hit = true;
-                *hitShip = ships[i];
-                break;
             }
         }
     }
     return hit;
 }
 
-
-void removeShipChunk(tinygl_point_t impactPoint, Ship* ship)
-{
-    for (int i = 0; i < ship->nOffsets; i++) {
-        if (isEqual(impactPoint, getGridPosition(ship, i))) {
-            // The ship has been hit at this offset
-            ship->hitStatus[i] = true;
-        }
-    }
-}
 
 
 /* Handles game state change events
@@ -363,7 +354,7 @@ static void taskGameRun (void)
             if (button_push_event_p(BUTTON1)) {
                 irRequestPlayerOne();
                 
-            } else if (irConfirmMessageRecieved(REQUEST_PLAYER_ONE)) {
+            } else if (irWasLastMessageReceived(REQUEST_PLAYER_ONE)) {
                 // Make us player 1
                 isPlayerOne = true;
                 changeState(PLACE_SHIPS);
@@ -435,11 +426,8 @@ static void taskGameRun (void)
             newMessage = irGetMessage();
             if (newMessage < NO_MESSAGE) {  // Must be coordinates
                 tinygl_point_t impactPoint = decodeCharToPoint(newMessage);
-                Ship* hitShip;
-                if (checkShipHit(impactPoint, hitShip)) {
+                if (checkShipHit(impactPoint)) {
                     // A ship has been hit
-                    
-                    removeShipChunk(impactPoint, hitShip); // TODO: Could be reworked to not include hitShip
                     irSendHit();
                     // TODO: Display "hit"
                 } else {
@@ -447,11 +435,16 @@ static void taskGameRun (void)
                     irSendMiss();
                     // TODO: Display "miss"
                 }
-            }
-            
-            if (irConfirmMessageRecieved(SEND_HIT) || irConfirmMessageRecieved(SEND_MISS)) {
                 changeState(MY_TURN);
             }
+            
+            
+            // TODO: Make this work properly
+            //if (irWasLastMessageReceived(SEND_HIT) || irWasLastMessageReceived(SEND_MISS)) {
+                //changeState(MY_TURN);
+            //}
+            
+            
             break;
 
 

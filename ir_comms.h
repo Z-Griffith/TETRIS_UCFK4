@@ -6,8 +6,7 @@
 #ifndef IR_COMMS_H
 #define IR_COMMS_H
 
-// Maxium length of IR sending queue
-#define IR_QUEUE_MAX 10 
+#include <stdbool.h>
 
 // Checks for confirm N times before resend
 #define IR_WATCHDOG_MAX 10 
@@ -22,16 +21,16 @@ typedef enum ir_state {
     CONFIRM = 101,
     REQUEST_PLAYER_ONE = 102,
     SEND_HIT = 104,
-    SEND_MISS = 105
+    SEND_MISS = 105,
+    MESSAGE_SENT = 106
 } ir_state_t;
 
 // Defines the IR handler struct
 typedef struct ir_handler_t {
-    char queue[IR_QUEUE_MAX];
-    int nextQueueIndex;
+    char messageToSend;
     char lastMessageSent;
     char lastMessageRecieved;
-    bool isConfirmationRecieved;
+    bool wasLastSentConfirmed;
     bool isConfirmationSent;
     int nResendAttempts;
     int sendTick;
@@ -40,36 +39,25 @@ typedef struct ir_handler_t {
     int irRate;
 } irHandler_t;
 
-// Remove oldest message from queue
-char irQueuePop(void);
-
 
 // Recieve an IR message
-void irRecieve(void);
+void irRecieveMessage(void);
 
 
 // Send a IR message
-void irSend(char);
+void irSendMessage(char);
 
 
 // Send confirmation messages to other board
-void irSendConfirmation(void);
+void irSendConfirmationMessage(void);
 
 
 // Is there a new message ready
 bool irHasNewMessage(void);
 
 
-// Retrieve new message
-char irGetMessage(void);
-
-
 // Checks whether a CONFIRM has been sent back
-void irRecieveConfirmation(void);
-
-
-// Add new char message to queue for sending
-void irQueuePush(char);
+void irCheckForConfirmationMessage(void);
 
 
 // Defines the irTask machine, run through each frame
@@ -79,9 +67,12 @@ void irTask(void);
 // Initialises the irHandler to defaults
 void irInit(int, int);
 
-
 // Checks whether confirmation was recieved for last message
-bool irConfirmMessageRecieved(char);
+bool irWasLastMessageReceived(char);
+
+
+// Retrieve new message
+char irGetMessage(void);
 
 
 // Returns last message sent over IR

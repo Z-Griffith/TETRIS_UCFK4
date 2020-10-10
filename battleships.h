@@ -165,8 +165,9 @@ tinygl_point_t decodeCharToPoint(char);
 /* Changes game state to new state */
 void changeState(state_t);
 
+
 /* Checks whether point is currently on a ship */
-bool checkShipHit(tinygl_point_t, Ship*);
+bool checkShipHit(tinygl_point_t);
 
 /* taskGameRun
  * Handles the game logic task */
