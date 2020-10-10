@@ -239,27 +239,6 @@ void resetBoard(Ship* ships, int nShips)
     }
 }
 
-
-/* Game Round Term Show on display round one two three*/
-void roundTerm(int termNumber)
-{
-    //round term number start with one end with 3.
-    tinygl_text_speed_set (MESSAGE_RATE);
-    tinygl_text_mode_set (TINYGL_TEXT_MODE_SCROLL);
-
-    /* TODO: Set the message using tinygl_text().  */
-    char* part_of_text = "Round ";
-    char t_number = (char) (termNumber + '0'); // int to char
-    char* message_text = malloc(sizeof(char)*7);//9 char we need now.
-    strncpy(message_text, part_of_text, 6);
-    message_text[6] = t_number;
-    message_text[7] = 0;
-
-    tinygl_text(message_text);
-
-    free(message_text);
-}
-
 /* Moves the firing targetter around the grid */
 void moveTargetter(Targetter* targetter, tinygl_point_t direction)
 {
@@ -383,7 +362,7 @@ static void taskGameRun (void)
 
         case WAIT_FOR_CONNECT :
             if (button_push_event_p(BUTTON1)) {
-                irQueueAdd(REQUEST_PLAYER_ONE);
+                irQueueAdd(REQUEST_PLAYER_ONE); //
                 irQueueAdd(WAIT_FOR_CONFIRM);
             }
             break;
