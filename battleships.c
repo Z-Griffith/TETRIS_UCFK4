@@ -1,4 +1,5 @@
-/** @file   battleships.c
+/**
+    @file   battleships.c
     @author S. Li (gli65), S.A. Heslip (she119)
     @date   11 Oct 2020
 */
