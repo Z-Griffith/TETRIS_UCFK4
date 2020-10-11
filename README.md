@@ -31,8 +31,8 @@ Run `make program` to start playing!
 3. Two length `'i'` ship ![i ship](resources/i_ships.PNG)
 4. One length `'O'` ship ![O ship](resources/O_ship.PNG)
 - `There are 5 ships in total, 1 L, 1 I, 1 i, 2 O ship.`
-- 0.**Start The Game**:  Firstly, The display shows `BATTLESHIPS` (It means the game is Start). Next, Showing `Push to connect` Now A player can click the button (the white switch near R7) down to be a palyer1 other is player 2.
-- 1.**Placing The Ships**: From the loading screen, press the button to begin placing the ships. Use the nav switch to move your ship around the board, and use the button to rotate ships 90 degrees. Place ships by pressing the button (the white switch near R7) down. Once all ships have been placed,  it will automatically go the next step.
-- 2.**Wait For Player Turn**: The player 1 display shows `Your turn` and The player 2 display shows `waiting for hit..` or `Opponents turn`, The player 1 to do the step 4. and player 2 waiting for player 1 and then is plyer 2 turn to hit.
-- 3.**Strike Stage**: Move the cursor around the screen with the board with the nav switch, and push the nav switch to fire. Shows if the hit was successful and is then taken to a hold screen waiting for the other player.
-- 4.**End Of Game**: When a player sinks all other players' ships, he wins the game. When prompted, press the button to play again!
+- `1`.**Start The Game**:  Firstly, The display shows `BATTLESHIPS` (It means the game is Start). Next, Showing `Push to connect` Now A player can click the button (the white switch near R7) down to be a palyer1 other is player 2.
+- `2`.**Placing The Ships**: From the loading screen, press the button to begin placing the ships. Use the nav switch to move your ship around the board, and use the button to rotate ships 90 degrees. Place ships by pressing the button (the white switch near R7) down. Once all ships have been placed,  it will automatically go the next step.
+- `3`.**Wait For Player Turn**: The player 1 display shows `Your turn` and The player 2 display shows `waiting for hit..` or `Opponents turn`, The player 1 to do the step 4. and player 2 waiting for player 1 and then is plyer 2 turn to hit.
+- `4`.**Strike Stage**: Move the cursor around the screen with the board with the nav switch, and push the nav switch to fire. Shows if the hit was successful and is then taken to a hold screen waiting for the other player.
+- `5`.**End Of Game**: When a player sinks all other players' ships, he wins the game. When prompted, press the button to play again!
