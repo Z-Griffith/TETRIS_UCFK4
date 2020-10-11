@@ -10,8 +10,8 @@ ENCE260 UCFK4 Assignment
 # Authors
 Scott Li (gli65@uclive.ac.nz), Sam Heslip (she119@uclive.ac.nz)
 
-# Date Started
-29/09/2020
+# Date Started To end
+29/09/2020 - 11/10/2020
 
 # How to start game
 From within this directory, the following commands can be run
