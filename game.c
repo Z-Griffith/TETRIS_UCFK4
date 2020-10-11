@@ -25,7 +25,7 @@ void checkButton(Tetronimo* activeTetronimo, uint8_t* bitmap)
     button_update();
     
     if (button_push_event_p(BUTTON1) && activeTetronimo) {
-        rotate_tetronimo(activeTetronimo, bitmap, 0);
+        rotateTetronimo(activeTetronimo, bitmap, 0);
     }
 }
 
@@ -36,13 +36,13 @@ void check_navswitch(Tetronimo* activeTetronimo, uint8_t* bitmap)
     navswitch_update();
     
     if (navswitch_push_event_p (NAVSWITCH_PUSH) && activeTetronimo) {
-        rotate_tetronimo(activeTetronimo, bitmap, 1);
+        rotateTetronimo(activeTetronimo, bitmap, 1);
     }
     if (navswitch_push_event_p (NAVSWITCH_EAST) && activeTetronimo) {
-        shift_tetronimo(activeTetronimo, bitmap, tinygl_point(1,0));
+        shiftTetronimo(activeTetronimo, bitmap, tinygl_point(1,0));
     }
     if (navswitch_push_event_p (NAVSWITCH_WEST) && activeTetronimo) {
-        shift_tetronimo(activeTetronimo, bitmap, tinygl_point(-1,0));
+        shiftTetronimo(activeTetronimo, bitmap, tinygl_point(-1,0));
     }
     if (navswitch_push_event_p (NAVSWITCH_SOUTH) && activeTetronimo) {
         slam_tetronimo(activeTetronimo, bitmap);
@@ -157,7 +157,7 @@ int main(void)
                     save_tetronimo_to_bitmap(activeTetronimo, bitmap);
                     activeTetronimo = NULL;
                 } else {
-                    shift_tetronimo(activeTetronimo, bitmap, tinygl_point(0,1)); //Fall
+                    shiftTetronimo(activeTetronimo, bitmap, tinygl_point(0,1)); //Fall
                 }
             }
         
