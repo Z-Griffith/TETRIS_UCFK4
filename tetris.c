@@ -7,13 +7,13 @@
 
 
 /* Returns the absolute position of a point on a Tetronimo */
-tinygl_point_t absolute_pos(Tetronimo* tetr, int offset_index)
+tinygl_point_t getGridPos(Tetronimo* tetr, int offset_index)
 {
-    return vector_add_points(tetr->pos, tetr->offsets[offset_index]);
+    return vectorAddPoints(tetr->pos, tetr->offsets[offset_index]);
 }
 
 /* Returns the vector addition of two points */
-tinygl_point_t vector_add_points(tinygl_point_t a, tinygl_point_t b)
+tinygl_point_t vectorAddPoints(tinygl_point_t a, tinygl_point_t b)
 {
     tinygl_point_t newPoint = {a.x + b.x, a.y + b.y};
     return newPoint;
@@ -22,8 +22,8 @@ tinygl_point_t vector_add_points(tinygl_point_t a, tinygl_point_t b)
 /* Draws a Tetronimo to the LED matrix */
 void draw_tetronimo(Tetronimo* tetr)
 {
-    for (int i = 0; i < tetr->n_offsets; i++) {
-        tinygl_draw_point(absolute_pos(tetr, i), 1);
+    for (int i = 0; i < tetr->nOffsets; i++) {
+        tinygl_draw_point(getGridPos(tetr, i), 1);
     }
 }
 
@@ -32,9 +32,9 @@ void shiftTetronimo(Tetronimo* tetr, uint8_t* bitmap, tinygl_point_t shift)
 {
     // Check validity of this shift
     int shift_is_valid = 1;
-    for (int i = 0; i < tetr->n_offsets; i++) {
-        tinygl_point_t abs_pos = absolute_pos(tetr, i);
-        tinygl_point_t point_after_move = vector_add_points(abs_pos, shift);
+    for (int i = 0; i < tetr->nOffsets; i++) {
+        tinygl_point_t abs_pos = getGridPos(tetr, i);
+        tinygl_point_t point_after_move = vectorAddPoints(abs_pos, shift);
         if (isPointOccupied(bitmap, point_after_move) || !isPointWithinGrid(point_after_move)) {
             // Shift is in valid, terminate the shift
             shift_is_valid = 0;
@@ -44,11 +44,11 @@ void shiftTetronimo(Tetronimo* tetr, uint8_t* bitmap, tinygl_point_t shift)
             
     // Shift Tetronimo
     if (shift_is_valid) {
-        tetr->pos = vector_add_points(tetr->pos, shift);
+        tetr->pos = vectorAddPoints(tetr->pos, shift);
     }
 }
 
-void slam_tetronimo(Tetronimo* tetr, uint8_t* bitmap)
+void slamTetronimo(Tetronimo* tetr, uint8_t* bitmap)
 {
     while(has_tetronimo_landed(tetr, bitmap) == 0) {
         shiftTetronimo(tetr, bitmap, tinygl_point(0, 1));
@@ -59,8 +59,8 @@ void slam_tetronimo(Tetronimo* tetr, uint8_t* bitmap)
 int checkGameOver(Tetronimo* tetr)
 {
     int isGameOver = 0;
-    for (int i = 0; i < tetr->n_offsets; i++) {
-        if (absolute_pos(tetr, i).y <= (WALL_TOP+1)) {
+    for (int i = 0; i < tetr->nOffsets; i++) {
+        if (getGridPos(tetr, i).y <= (WALL_TOP+1)) {
             isGameOver = 1;
             break;
         }
@@ -72,40 +72,40 @@ int checkGameOver(Tetronimo* tetr)
 /* Rotates a Tetronimo +-90 degrees */
 void rotateTetronimo(Tetronimo* tetr, uint8_t* bitmap, int isClockwise)
 {
-    tinygl_point_t new_offset;
-    int is_valid_rotation = 1;
+    tinygl_point_t newOffset;
+    int isValidRotation = 1;
     Tetronimo temp;
     temp.pos = tetr->pos;
     temp.id = tetr->id;
     // Rotate each offset using 2D rotation matrix
-    for (int i = 0; i < tetr->n_offsets; i++) {
+    for (int i = 0; i < tetr->nOffsets; i++) {
         if (isClockwise) {
-            new_offset = tinygl_point(-(tetr->offsets[i]).y, (tetr->offsets[i]).x);
+            newOffset = tinygl_point(-(tetr->offsets[i]).y, (tetr->offsets[i]).x);
         } else {
-            new_offset = tinygl_point((tetr->offsets[i]).y, -(tetr->offsets[i]).x);
+            newOffset = tinygl_point((tetr->offsets[i]).y, -(tetr->offsets[i]).x);
         }
-        temp.offsets[i] = new_offset;
-        if (isPointOccupied(bitmap, absolute_pos(&temp, i))) {
-            is_valid_rotation = 0;
+        temp.offsets[i] = newOffset;
+        if (isPointOccupied(bitmap, getGridPos(&temp, i))) {
+            isValidRotation = 0;
             break;
         }
     }
     
-    if (is_valid_rotation) {
-        for (int i = 0; i < tetr->n_offsets; i++) {
+    if (isValidRotation) {
+        for (int i = 0; i < tetr->nOffsets; i++) {
             
             tetr->offsets[i] = temp.offsets[i];
         }
     
         // Check new positions and shift if needed
-        for (int i = 0; i < tetr->n_offsets; i++) {
+        for (int i = 0; i < tetr->nOffsets; i++) {
             // If one of the offsets is in left wall, shift tetronimo right
-            if(absolute_pos(tetr, i).x <= WALL_LEFT) {
+            if(getGridPos(tetr, i).x <= WALL_LEFT) {
                 shiftTetronimo(tetr, bitmap, tinygl_point(1,0));
                 break;
             }
             // ^^ right wall, shift left
-            if(absolute_pos(tetr, i).x >= WALL_RIGHT) {
+            if(getGridPos(tetr, i).x >= WALL_RIGHT) {
                 shiftTetronimo(tetr, bitmap, tinygl_point(-1,0));
                 break;
             }
@@ -135,9 +135,9 @@ int isPointWithinGrid(tinygl_point_t point)
 /* Checks whether the Tetronimo has impacted the ground or the pile */
 int has_tetronimo_landed(Tetronimo* tetr, uint8_t* bitmap)
 {
-    for (int i = 0; i < tetr->n_offsets; i++) {
-        tinygl_point_t abs_pos = absolute_pos(tetr, i);
-        tinygl_point_t point_below = vector_add_points(abs_pos, tinygl_point(0, 1));
+    for (int i = 0; i < tetr->nOffsets; i++) {
+        tinygl_point_t abs_pos = getGridPos(tetr, i);
+        tinygl_point_t point_below = vectorAddPoints(abs_pos, tinygl_point(0, 1));
         if (isPointOccupied(bitmap, point_below) || point_below.y >= WALL_FLOOR) {
             return 1;
         } 
@@ -192,8 +192,8 @@ void save_tetronimo_to_bitmap(Tetronimo* tetr, uint8_t* bitmap)
     
         for (int iCol = 0; iCol < WALL_RIGHT; iCol++) {
             
-            for (int i = 0; i < tetr->n_offsets; i++) {
-                tinygl_point_t currentPoint = absolute_pos(tetr, i);
+            for (int i = 0; i < tetr->nOffsets; i++) {
+                tinygl_point_t currentPoint = getGridPos(tetr, i);
                 
                 if (currentPoint.y == iRow && currentPoint.x == iCol) {
                     *(bitmap + iRow) = bitmap[iRow] | (1 << iCol);

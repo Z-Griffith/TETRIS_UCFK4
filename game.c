@@ -45,7 +45,7 @@ void check_navswitch(Tetronimo* activeTetronimo, uint8_t* bitmap)
         shiftTetronimo(activeTetronimo, bitmap, tinygl_point(-1,0));
     }
     if (navswitch_push_event_p (NAVSWITCH_SOUTH) && activeTetronimo) {
-        slam_tetronimo(activeTetronimo, bitmap);
+        slamTetronimo(activeTetronimo, bitmap);
     }
 }
 

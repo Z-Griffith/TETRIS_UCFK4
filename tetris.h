@@ -20,18 +20,18 @@
 typedef struct Tetronimo_t {
     int id;
     tinygl_point_t pos;
-    int n_offsets;
+    int nOffsets;
     tinygl_point_t offsets[MAX_OFFSETS];
 } Tetronimo;
 
 
-tinygl_point_t absolute_pos(Tetronimo*, int);
-tinygl_point_t vector_add_points(tinygl_point_t, tinygl_point_t);
+tinygl_point_t getGridPos(Tetronimo*, int);
+tinygl_point_t vectorAddPoints(tinygl_point_t, tinygl_point_t);
 
 void draw_tetronimo(Tetronimo*);
 void shiftTetronimo(Tetronimo*, uint8_t*, tinygl_point_t);
 void rotateTetronimo(Tetronimo*, uint8_t*, int);
-void slam_tetronimo(Tetronimo*, uint8_t*);
+void slamTetronimo(Tetronimo*, uint8_t*);
 void drawBitmap(uint8_t*);
 void save_tetronimo_to_bitmap(Tetronimo*, uint8_t*);
 void shift_bitmap(uint8_t*, int);
