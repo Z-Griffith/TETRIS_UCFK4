@@ -3,7 +3,7 @@ ENCE260 UCFK4 Assignment
 
 # Game
 ## ![Battleships Logo](resources/logo.png) 
-BATTLESHIPS
+## BATTLESHIPS
 ```Bash
 1. A 2-player battleships game developed to run on the UCFK4 micro-controller.
 ```
