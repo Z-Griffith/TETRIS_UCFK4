@@ -32,8 +32,8 @@ void save_tetronimo_to_bitmap(Tetronimo*, uint8_t*);
 void shift_bitmap(uint8_t*, int);
 int clear_full_lines(uint8_t*);
 void reset(Tetronimo**, uint8_t*);
-void get_new_tetronimo(Tetronimo**, Tetronimo*);
-void add_line(uint8_t*);
+void getNewTetronimo(Tetronimo**, Tetronimo*);
+void addLine(uint8_t*);
 
 int is_point_occupied(uint8_t*, tinygl_point_t);
 int is_point_within_grid(tinygl_point_t);

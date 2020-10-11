@@ -205,7 +205,7 @@ void save_tetronimo_to_bitmap(Tetronimo* tetr, uint8_t* bitmap)
 }
 
 /* Retrieves a fresh random Tetronimo from the Tetronimo pieces array */
-void get_new_tetronimo(Tetronimo** tetr, Tetronimo* pieces) 
+void getNewTetronimo(Tetronimo** tetr, Tetronimo* pieces) 
 {
     int rand_int = rand() % N_PIECES;
     (pieces + rand_int)->pos = tinygl_point(SPAWN_POINT);
@@ -219,7 +219,7 @@ void reset(Tetronimo** tetr, uint8_t* bitmap) {
     }
 }
 
-void add_line(uint8_t* bitmap)
+void addLine(uint8_t* bitmap)
 {
     for (int row_idx = 0; row_idx < 6; row_idx++) {
         *(bitmap + row_idx) = bitmap[row_idx+1];

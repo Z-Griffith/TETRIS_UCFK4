@@ -15,7 +15,7 @@
 
 enum {WAIT_FOR_CONNECT, GAME_RUN, GAME_WIN, GAME_OVER, WAIT_FOR_INPUT};
 
-void check_button(Tetronimo* activeTetronimo, uint8_t* bitmap)
+void checkButton(Tetronimo* activeTetronimo, uint8_t* bitmap)
 {
     button_update();
     
@@ -52,7 +52,7 @@ void send_lines(int n_lines)
     
 }
 
-void send_connect(void) 
+void sendConnect(void) 
 {
     for (int i = 0; i < 3; i++) {
         ir_uart_putc('C');
@@ -81,8 +81,8 @@ int main(void)
     button_init ();
     navswitch_init ();
     
-    int led_state = 1;
-    led_set(LED1, led_state);
+    int led_gameState = 1;
+    led_set(LED1, led_gameState);
     
     pacer_init (LOOP_RATE);
     
@@ -102,52 +102,52 @@ int main(void)
     uint8_t bitmap[7] = {0};
     
     Tetronimo* activeTetronimo;
-    get_new_tetronimo(&activeTetronimo, pieces);
+    getNewTetronimo(&activeTetronimo, pieces);
     
-    int state = WAIT_FOR_CONNECT;
+    int gameState = WAIT_FOR_CONNECT;
     int nLinesCleared = 0;
     
     int tick = 0;
     while (1) {
         pacer_wait();
-        if (state == WAIT_FOR_CONNECT) {
+        if (gameState == WAIT_FOR_CONNECT) {
             navswitch_update();
             
             if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
-                send_connect();
-                state = GAME_RUN;
+                sendConnect();
+                gameState = GAME_RUN;
             }
             
             if (recieveConnect()) {
-                state = GAME_RUN;
+                gameState = GAME_RUN;
             }
-        } else if (state == GAME_RUN) {
+        } else if (gameState == GAME_RUN) {
             if (activeTetronimo == NULL) {
-                get_new_tetronimo(&activeTetronimo, pieces);
+                getNewTetronimo(&activeTetronimo, pieces);
             }
             
             if (ir_uart_read_ready_p ()) {
                 char recieved = ir_uart_getc ();
                 if (recieved == 'W') {
-                    state = GAME_WIN;
+                    gameState = GAME_WIN;
                 }
                 if (recieved == 'L') {
-                    add_line(bitmap);
+                    addLine(bitmap);
                 }
             }
             
             check_navswitch(activeTetronimo, bitmap);
-            check_button(activeTetronimo, bitmap);
+            checkButton(activeTetronimo, bitmap);
                 
             tick = tick + 1;
             if (tick > LOOP_RATE / TICK_RATE) {
                 tick = 0;
-                led_state = !led_state;
-                led_set(LED1, led_state);
+                led_gameState = !led_gameState;
+                led_set(LED1, led_gameState);
                 
                 if (has_tetronimo_landed(activeTetronimo, bitmap)) {
                     if (check_game_over(activeTetronimo)) {
-                        state = GAME_OVER;
+                        gameState = GAME_OVER;
                     }
                     save_tetronimo_to_bitmap(activeTetronimo, bitmap);
                     activeTetronimo = NULL;
@@ -163,7 +163,7 @@ int main(void)
             if (activeTetronimo) {
                 draw_tetronimo(activeTetronimo);
             }
-        } else if (state == GAME_OVER) {
+        } else if (gameState == GAME_OVER) {
             tinygl_clear();
             tinygl_text_speed_set(MESSAGE_RATE);
     
@@ -173,22 +173,22 @@ int main(void)
             
             ir_uart_putc('W');
             
-            state = WAIT_FOR_INPUT;
+            gameState = WAIT_FOR_INPUT;
             
-        } else if (state == WAIT_FOR_INPUT) {
+        } else if (gameState == WAIT_FOR_INPUT) {
             button_update();
             if (button_push_event_p(BUTTON1)) {
                 reset(&activeTetronimo, bitmap);
-                state = WAIT_FOR_CONNECT;
+                gameState = WAIT_FOR_CONNECT;
             }
-        } else if (state == GAME_WIN) {
+        } else if (gameState == GAME_WIN) {
             tinygl_clear();
             tinygl_text_speed_set(MESSAGE_RATE);
     
             tinygl_text_mode_set(TINYGL_TEXT_MODE_SCROLL);
             tinygl_text_speed_set (20);
             tinygl_text("YOU WIN!");
-            state = WAIT_FOR_INPUT;
+            gameState = WAIT_FOR_INPUT;
         }
             
         tinygl_update();
