@@ -1,6 +1,6 @@
 # File:   Makefile
-# Author: S. A. Heslip
-# Date:   21 Sep 2020
+# @author S. Li (gli65), S.A. Heslip (she119)
+# @date   11 Oct 2020
 # Descr:  Makefile for battleships game
 
 # Definitions.
