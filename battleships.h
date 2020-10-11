@@ -21,7 +21,13 @@
 #define DEFAULT_POS_X 2
 #define DEFAULT_POS_Y 3
 
-/** 
+
+#define NAVSWITCH_PRESS navswitch_push_event_p(NAVSWITCH_PUSH)
+#define BUTTON_PRESS button_push_event_p(BUTTON1)
+
+#define DISPLAY_TEXT_WAIT 4000
+
+/**
  * @brief Enumerator of states for the control of the current state of the game
  */
 typedef enum state {
@@ -36,10 +42,10 @@ typedef enum state {
     } state_t;
 
 
-/** 
+/**
  * @brief Declares the Ship structure with ship parameters for keeping
  * track of ship location, hit status, placement status.
- * 
+ *
  *      e.g. Consider this 'I' ship on the game board:
  *
  *                         centre (pos)
@@ -68,7 +74,7 @@ typedef struct Ship_t {
 } Ship;
 
 
-/** 
+/**
  * @brief Declares the Targetter struct, for targetting next missle shot.
  */
 typedef struct Targetter_t {
@@ -77,7 +83,7 @@ typedef struct Targetter_t {
 
 
 
-/** 
+/**
  * @brief 'L' type Ship with three offsets:
  * Ship Diagram:
  *                     [][]
@@ -93,7 +99,7 @@ Ship L_ship = {
     .isPlaced = false
 };
 
-/** 
+/**
  * @brief 'I' type Ship with three offsets:
  * Ship Diagram:
  *                     [][][]
@@ -108,7 +114,7 @@ Ship I_ship = {
     .isPlaced = false
 };
 
-/** 
+/**
  * @brief 'i' type Ship with two offsets:
  * Ship Diagram:
  *                     [][]
@@ -123,7 +129,7 @@ Ship i_ship = {
     .isPlaced = false
 };
 
-/** 
+/**
  * @brief Smallest ship; the 'o' type ship with one offset:
  * Ship Diagram:
  *                       []
@@ -138,14 +144,14 @@ Ship o_ship = {
     .isPlaced = false
 };
 
-/** 
+/**
  * @brief Tracks which state the game is in e.g.
  *       START_SCREEN: Display 'Battleships' and wait for keypress.
  */
 static state_t gameState;
 
 
-/** 
+/**
  * @brief Returns the vector addition of points a and b.
  * @param First point vector, a.
  * @param Second point vector, b.
@@ -154,7 +160,7 @@ static state_t gameState;
 tinygl_point_t vectorAdd(tinygl_point_t, tinygl_point_t);
 
 
-/** 
+/**
  * @brief Returns the grid position of a Ship's offset given an offsetIndex
  * @param Ship pointer.
  * @param offsetIndex.
@@ -163,7 +169,7 @@ tinygl_point_t vectorAdd(tinygl_point_t, tinygl_point_t);
 tinygl_point_t getGridPosition(Ship*, int);
 
 
-/** 
+/**
  * @brief Checks equality between two vectors (tinygl_point_t).
  * @param First point vector, a.
  * @param Second point vector, b.
@@ -172,7 +178,7 @@ tinygl_point_t getGridPosition(Ship*, int);
 bool isEqual(tinygl_point_t, tinygl_point_t);
 
 
-/** 
+/**
  * @brief Checks if a grid point does not contain a placed ship.
  * @param Grid point as a vector.
  * @param Ships array.
@@ -182,7 +188,7 @@ bool isEqual(tinygl_point_t, tinygl_point_t);
 bool isPointVacant(tinygl_point_t, Ship*, int);
 
 
-/** 
+/**
  * @brief Checks if a point is within the game grid.
  * @param Grid point as a vector.
  * @return True if point is within the game grid.
@@ -190,14 +196,14 @@ bool isPointVacant(tinygl_point_t, Ship*, int);
 bool isWithinGrid(tinygl_point_t);
 
 
-/** 
+/**
  * @brief Rotates a Ship 90 degrees and shifts if then outside the grid
  * @param Ship pointer.
  */
 void rotateShip(Ship*);
 
 
-/** 
+/**
  * @brief Moves a Ship across the grid in a given direction if possible.
  * @param Ship pointer.
  * @param Direction to move ship as a vector.
@@ -205,14 +211,14 @@ void rotateShip(Ship*);
 void moveShip(Ship*, tinygl_point_t);
 
 
-/** 
+/**
  * @brief Draws a ship to the LED matrix using TinyGL.
  * @param Ship pointer.
  */
 void drawShip(Ship*);
 
 
-/** 
+/**
  * @brief Attempts to place a Ship at it's current position.
  * @param Ship pointer.
  * @param Ships array.
@@ -222,21 +228,21 @@ void drawShip(Ship*);
 bool placeShip(Ship*, Ship*, int);
 
 
-/** 
+/**
  * @brief Performs check on navswitch for moving and rotating a Ship.
  * @param Ship pointer.
  */
 void checkNavswitchMoveShip(Ship*);
 
 
-/** 
+/**
  * @brief Performs check on navswitch for moving Targetter.
  * @param Targetter pointer.
  */
 void checkNavswitchMoveTargetter(Targetter*);
 
 
-/** 
+/**
  * @brief Draws placed and active ships to the LED matrix.
  * @param Ships array.
  * @param Number of ships in ships array.
@@ -244,14 +250,14 @@ void checkNavswitchMoveTargetter(Targetter*);
 void drawBoard(Ship*, int);
 
 
-/** 
+/**
  * @brief Resets a ship to default parameters for game reset.
  * @param Ships pointer.
  */
 void resetShip(Ship*);
 
 
-/** 
+/**
  * @brief Resets all ships to default parameters for game reset.
  * @param Ships array.
  * @param Number of ships in ships array.
@@ -259,7 +265,7 @@ void resetShip(Ship*);
 void resetBoard(Ship*, int);
 
 
-/** 
+/**
  * @brief Moves the firing targetter around the grid.
  * @param Targetter pointer.
  * @param Direction as a vector.
@@ -267,7 +273,7 @@ void resetBoard(Ship*, int);
 void moveTargetter(Targetter*, tinygl_point_t);
 
 
-/** 
+/**
  * @brief Encodes vector grid point into a char for IR sending.
  * @param Grid point as a vector.
  * @return Encoded char.
@@ -275,7 +281,7 @@ void moveTargetter(Targetter*, tinygl_point_t);
 char encodePointToChar(tinygl_point_t);
 
 
-/** 
+/**
  * @brief Decodes vector grid point into a char for IR recieving.
  * @param Encoded char.
  * @return Grid point as a vector.
@@ -283,14 +289,14 @@ char encodePointToChar(tinygl_point_t);
 tinygl_point_t decodeCharToPoint(char);
 
 
-/** 
+/**
  * @brief Changes game state to new state and perform trans-state actions.
  * @param New game state.
  */
 void changeState(state_t);
 
 
-/** 
+/**
  * @brief Checks whether point is currently on a ship.
  * @param Grid point as a vector.
  * @return True if a ship is located at this grid point.
@@ -298,26 +304,26 @@ void changeState(state_t);
 bool checkShipHit(tinygl_point_t);
 
 
-/** 
+/**
  * @brief Handles the game logic, sending/recieving IR, and state changes.
  */
 //void taskGameRun (void);
 
 
-/** 
+/**
  * @brief Handles the graphics logic, message timeouts, etc.
  */
 //void taskDisplay (void);
 
 
-/** 
+/**
  * @brief Checks whether this board's player has lost the game.
  * @return True if this board has all ships sunk.
  */
 bool checkGameLoss (void);
 
 
-/** 
+/**
  * @brief Checks whether a Ship has sunk or not (All offsets hit).
  * @param Ship pointer.
  * @return True if all offsets are hit; ship has sank.
