@@ -33,3 +33,7 @@ Run `make program` to start playing!
 - 1.**Placing The Ships**: From the loading screen, press the button to begin placing the ships. Use the nav switch to move your ship around the board, and use the button to rotate ships 90 degrees. Place ships by pressing the button (the white switch near R7) down. Once all ships have been placed,  it will automatically go the next step.
 - 2.**Strike Stage**: Move the cursor around the screen with the board with the nav switch, and push the nav switch to fire. Shows if the hit was successful and is then taken to a hold screen waiting for the other player.
 - 3.**End Of Game**: When a player sinks all other players' ships, he wins the game. When prompted, press the button to play again!
+
+
+## 5. testing
+- 1. ** using** make `make`
