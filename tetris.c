@@ -1,8 +1,7 @@
 /** @file   tetris.c
-    @author S. A. Heslip
-    @date   21 Sep 2020
+    @authors S. Heslip (she119), S. Li (gli65)
+    @date   11 Oct 2020
 */
-
 #include "tinygl.h"
 #include "tetris.h"
 
@@ -57,7 +56,7 @@ void slam_tetronimo(Tetronimo* tetr, uint8_t* bitmap)
 }
 
 
-int check_game_over(Tetronimo* tetr)
+int checkGameOver(Tetronimo* tetr)
 {
     int is_game_over = 0;
     for (int offset_idx = 0; offset_idx < tetr->n_offsets; offset_idx++) {

@@ -1,3 +1,8 @@
+/** @file   game.c
+    @authors S. Heslip (she119), S. Li (gli65)
+    @date   11 Oct 2020
+*/
+
 #include <stdlib.h>
 #include "system.h"
 #include "button.h"
@@ -44,9 +49,9 @@ void check_navswitch(Tetronimo* activeTetronimo, uint8_t* bitmap)
     }
 }
 
-void send_lines(int n_lines) 
+void sendLines(int nLines) 
 {
-    for (int line = 0; line < n_lines; line++) {
+    for (int line = 0; line < nLines; line++) {
         ir_uart_putc('L');
     }
     
@@ -146,7 +151,7 @@ int main(void)
                 led_set(LED1, led_gameState);
                 
                 if (has_tetronimo_landed(activeTetronimo, bitmap)) {
-                    if (check_game_over(activeTetronimo)) {
+                    if (checkGameOver(activeTetronimo)) {
                         gameState = GAME_OVER;
                     }
                     save_tetronimo_to_bitmap(activeTetronimo, bitmap);
@@ -159,7 +164,7 @@ int main(void)
             tinygl_clear();
             drawBitmap(bitmap);
             nLinesCleared = clear_full_lines(bitmap);
-            send_lines(nLinesCleared);
+            sendLines(nLinesCleared);
             if (activeTetronimo) {
                 draw_tetronimo(activeTetronimo);
             }

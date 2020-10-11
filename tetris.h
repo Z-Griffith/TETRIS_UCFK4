@@ -1,3 +1,8 @@
+/** @file   tetris.h
+    @authors S. Heslip (she119), S. Li (gli65)
+    @date   11 Oct 2020
+*/
+
 #ifndef TETRIS_H
 #define TETRIS_H
 
@@ -38,5 +43,5 @@ void addLine(uint8_t*);
 int is_point_occupied(uint8_t*, tinygl_point_t);
 int is_point_within_grid(tinygl_point_t);
 int has_tetronimo_landed(Tetronimo*, uint8_t*);
-int check_game_over(Tetronimo*);
+int checkGameOver(Tetronimo*);
 #endif
