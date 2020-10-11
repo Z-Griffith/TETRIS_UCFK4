@@ -34,3 +34,6 @@ Run `make program` to start playing!
 - 2.**Strike Stage**: Move the cursor around the screen with the board with the nav switch, and push the nav switch to fire. Shows if the hit was successful and is then taken to a hold screen waiting for the other player.
 - 3.**End Of Game**: When a player sinks all other players' ships, he wins the game. When prompted, press the button to play again!
 
+
+## 5 Testing
+- 1.** using**
