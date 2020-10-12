@@ -25,7 +25,7 @@ Run `make program` to start playing!
 
 # How to play game
 
-## 7 Tetronimo model
+## `7` Tetronimo model
 1. Four length `'+'` ship ![+ ship](resources/O_ship.PNG)
 2. Four length `'S'` ship ![S ship](resources/O_ship.PNG)
 3. Four length `'Z'` ship ![Z ship](resources/O_ship.PNG)
