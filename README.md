@@ -38,6 +38,6 @@ Run `make program` to start playing!
 6. Three length `'I'` ![I ship](resources/I.png)
 7. Two length `'i'`   ![i ship](resources/i.png)
 
-- `1`.**Start The Game**: The game start display shows `'Push right button to start'`, Next Push the Nav Swithc to start.
+- `1`.**Start The Game**: The game start display shows `'Push nav button to start'`, Next Push the Nav Swithc to start.
 - `2`.**Run Stage**: Move the Tetronimo around the screen with the nav switch. Left button and navswitch push rotate the Tetronimo anticlockwise and clockwise. Navswitch down slams the Tetroinmo to the ground.
 - `3`.**End Of Game**: When a players Tetronimo tower grows above the screen, they lose. Aim to stay low.
