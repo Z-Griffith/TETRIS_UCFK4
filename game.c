@@ -15,26 +15,32 @@
 #include "../fonts/font5x7_1.h"
 
 #define LOOP_RATE 300
-#define TICK_RATE 1
-#define MESSAGE_RATE 5
+#define gameTick_RATE 1
+#define MESSAGE_RATE 15
 
-enum {WAIT_FOR_CONNECT, GAME_RUN, GAME_WIN, GAME_OVER, WAIT_FOR_INPUT};
+/* Defines the game states */
+typedef enum game_state_t
+{
+    WAIT_FOR_CONNECT,
+    GAME_RUN,
+    GAME_WIN,
+    GAME_LOSS,
+    RESET
+} game_state;
 
+/* Checks the left button for a press and rotates tetronimo  */
 void checkButton(Tetronimo* activeTetronimo, uint8_t* bitmap)
 {
     button_update();
-    
     if (button_push_event_p(BUTTON1) && activeTetronimo) {
         rotateTetronimo(activeTetronimo, bitmap, 0);
     }
 }
 
-
-
-void check_navswitch(Tetronimo* activeTetronimo, uint8_t* bitmap)
+/* Checks the navswitch and performs associated action */
+void checkNavswitch(Tetronimo* activeTetronimo, uint8_t* bitmap)
 {
     navswitch_update();
-    
     if (navswitch_push_event_p (NAVSWITCH_PUSH) && activeTetronimo) {
         rotateTetronimo(activeTetronimo, bitmap, 1);
     }
@@ -49,21 +55,24 @@ void check_navswitch(Tetronimo* activeTetronimo, uint8_t* bitmap)
     }
 }
 
-void sendLines(int nLines) 
+/* Sends nLines to the other board to make it harder for them */
+void sendLines(int nLines)
 {
     for (int line = 0; line < nLines; line++) {
         ir_uart_putc('L');
     }
-    
+
 }
 
-void sendConnect(void) 
+/* Sends a connection request to the other board over IR */
+void sendConnect(void)
 {
     for (int i = 0; i < 3; i++) {
         ir_uart_putc('C');
     }
 }
 
+/* Receives a connection request from the other board over IR */
 bool recieveConnect(void)
 {
     char recieved = 0;
@@ -77,7 +86,7 @@ bool recieveConnect(void)
     return isConnected;
 }
 
-
+/* Main game loop */
 int main(void)
 {
     system_init();
@@ -85,117 +94,129 @@ int main(void)
     ir_uart_init();
     button_init ();
     navswitch_init ();
-    
+    pacer_init (LOOP_RATE);
+
     int led_gameState = 1;
     led_set(LED1, led_gameState);
-    
-    pacer_init (LOOP_RATE);
-    
+
     tinygl_font_set(&font5x7_1);
     tinygl_init(LOOP_RATE);
-    
-    Tetronimo pieces[] = {
-        {0, {0,0}, 3, {{0,1}, {0,0}, {1,0}}}, // Small J piece
-        {1, {0,0}, 4, {{-1,0}, {-1,1}, {0,0}, {0,1}}}, // Square piece
-        {2, {0,0}, 4, {{-1,0}, { 0,1}, {0,0}, {1,0}}}, // T piece
-        {3, {0,0}, 3, {{ 0,0}, {1,0}, {0,1}}}, // Small L piece
-        {4, {0,0}, 3, {{ -1,0}, {0,0}, {1,0}}}, // Small I piece
-        {5, {0,0}, 4, {{-1,0}, { 0,0}, {0,1}, {1,1}}}, // S piece
-        {6, {0,0}, 4, {{-1,1}, { 0,1}, {0,0}, {1,0}}}, // Z piece
+    tinygl_text_speed_set(MESSAGE_RATE);
+    tinygl_text_mode_set(TINYGL_TEXT_MODE_SCROLL);
+    tinygl_text_speed_set (20);
+
+    // Fill all tetronimos with their associated values
+    Tetronimo allTetronimos[] = {
+        {{0,0}, 2, {{0,1}, {0,0}}},                 // Small I piece
+        {{0,0}, 4, {{-1,0}, {-1,1}, {0,0}, {0,1}}}, // Square piece
+        {{0,0}, 4, {{-1,0}, { 0,1}, {0,0}, {1,0}}}, // T piece
+        {{0,0}, 3, {{ 0,0}, {1,0}, {0,1}}},         // Small L piece
+        {{0,0}, 3, {{ -1,0}, {0,0}, {1,0}}},        //  I piece
+        {{0,0}, 4, {{-1,0}, { 0,0}, {0,1}, {1,1}}}, // S piece
+        {{0,0}, 4, {{-1,1}, { 0,1}, {0,0}, {1,0}}}, // Z piece
     };
-    
+
     uint8_t bitmap[7] = {0};
-    
+
     Tetronimo* activeTetronimo;
-    getNewTetronimo(&activeTetronimo, pieces);
-    
-    int gameState = WAIT_FOR_CONNECT;
+    getNewTetronimo(&activeTetronimo, allTetronimos);
+
+    game_state gameState = WAIT_FOR_CONNECT;
+    int isDisplayingMessage = false;
     int nLinesCleared = 0;
-    
-    int tick = 0;
+
+    int ledTick = 0;
+    int gameTick = 0;
     while (1) {
         pacer_wait();
-        if (gameState == WAIT_FOR_CONNECT) {
-            navswitch_update();
-            
-            if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
-                sendConnect();
-                gameState = GAME_RUN;
-            }
-            
-            if (recieveConnect()) {
-                gameState = GAME_RUN;
-            }
-        } else if (gameState == GAME_RUN) {
-            if (activeTetronimo == NULL) {
-                getNewTetronimo(&activeTetronimo, pieces);
-            }
-            
-            if (ir_uart_read_ready_p ()) {
-                char recieved = ir_uart_getc ();
-                if (recieved == 'W') {
-                    gameState = GAME_WIN;
+        switch (gameState) {
+            case WAIT_FOR_CONNECT :
+                // Establish IR connection
+                if (!isDisplayingMessage) {
+                    isDisplayingMessage = 1;
+                    tinygl_text(" Push right button to connect ");
                 }
-                if (recieved == 'L') {
-                    addLine(bitmap);
+                navswitch_update();
+                if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
+                    sendConnect();
+                    gameState = GAME_RUN;
                 }
-            }
-            
-            check_navswitch(activeTetronimo, bitmap);
-            checkButton(activeTetronimo, bitmap);
-                
-            tick = tick + 1;
-            if (tick > LOOP_RATE / TICK_RATE) {
-                tick = 0;
-                led_gameState = !led_gameState;
-                led_set(LED1, led_gameState);
-                
-                if (has_tetronimo_landed(activeTetronimo, bitmap)) {
-                    if (checkGameOver(activeTetronimo)) {
-                        gameState = GAME_OVER;
+                if (recieveConnect()) {
+                    gameState = GAME_RUN;
+                }
+                break;
+
+            case GAME_RUN :
+                // Run game logic
+                if (activeTetronimo == NULL) {
+                    getNewTetronimo(&activeTetronimo, allTetronimos);
+                }
+
+                if (ir_uart_read_ready_p ()) {
+                    // Check for win or loss
+                    char recieved = ir_uart_getc ();
+                    if (recieved == 'W') {
+                        gameState = GAME_WIN;
                     }
-                    save_tetronimo_to_bitmap(activeTetronimo, bitmap);
-                    activeTetronimo = NULL;
-                } else {
-                    shiftTetronimo(activeTetronimo, bitmap, tinygl_point(0,1)); //Fall
+                    if (recieved == 'L') {
+                        addLine(bitmap);
+                    }
                 }
-            }
-        
-            tinygl_clear();
-            drawBitmap(bitmap);
-            nLinesCleared = clear_full_lines(bitmap);
-            sendLines(nLinesCleared);
-            if (activeTetronimo) {
-                draw_tetronimo(activeTetronimo);
-            }
-        } else if (gameState == GAME_OVER) {
-            tinygl_clear();
-            tinygl_text_speed_set(MESSAGE_RATE);
-    
-            tinygl_text_mode_set(TINYGL_TEXT_MODE_SCROLL);
-            tinygl_text_speed_set (20);
-            tinygl_text("GAME OVER!");
-            
-            ir_uart_putc('W');
-            
-            gameState = WAIT_FOR_INPUT;
-            
-        } else if (gameState == WAIT_FOR_INPUT) {
-            button_update();
-            if (button_push_event_p(BUTTON1)) {
+
+                checkNavswitch(activeTetronimo, bitmap);
+                checkButton(activeTetronimo, bitmap);
+
+                gameTick++;
+                if (gameTick > LOOP_RATE / gameTick_RATE) {
+                    gameTick = 0;
+                    led_gameState = !led_gameState;
+                    led_set(LED1, led_gameState);
+
+                    if (hasTetronimoLanded(activeTetronimo, bitmap)) {
+                        if (checkGameOver(activeTetronimo)) {
+                            gameState = GAME_LOSS;
+                        }
+                        saveTetronimoToBitmap(activeTetronimo, bitmap);
+                        activeTetronimo = NULL;
+                    } else {
+                        shiftTetronimo(activeTetronimo, bitmap, tinygl_point(0,1)); //Fall
+                    }
+                }
+                tinygl_clear();
+                drawBitmap(bitmap);
+                nLinesCleared = clearFullLines(bitmap);
+                sendLines(nLinesCleared);
+                if (activeTetronimo) {
+                    drawTetronimo(activeTetronimo);
+                }
+                break;
+
+
+            case GAME_LOSS :
+                // This player has lost the game
+                tinygl_clear();
+                tinygl_text("You lose!");
+                ir_uart_putc('W');
+                gameState = RESET;
+                break;
+
+
+            case RESET :
+                // Resets the game
                 reset(&activeTetronimo, bitmap);
                 gameState = WAIT_FOR_CONNECT;
-            }
-        } else if (gameState == GAME_WIN) {
-            tinygl_clear();
-            tinygl_text_speed_set(MESSAGE_RATE);
-    
-            tinygl_text_mode_set(TINYGL_TEXT_MODE_SCROLL);
-            tinygl_text_speed_set (20);
-            tinygl_text("YOU WIN!");
-            gameState = WAIT_FOR_INPUT;
+                break;
+
+
+            case GAME_WIN :
+                // This player has won the game
+                tinygl_clear();
+                tinygl_text("You win!");
+                gameState = RESET;
+                break;
         }
-            
+
         tinygl_update();
+
     }
 }
