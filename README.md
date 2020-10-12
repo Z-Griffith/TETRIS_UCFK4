@@ -7,6 +7,10 @@ ENCE260 UCFK4 Assignment
 ```Bash
 1. A 2-player TETRIS game developed to run on the UCFK4 micro-controller.
 ```
+# Aim Of Game
+```Bash
+In Tetris, players must complete lines by moving differently shaped pieces (tetrominoes), which descend onto the playing field. The completed lines disappear and grant the player points, and the player can proceed to fill the vacated spaces. The game ends when the playing field is filled. 
+```
 
 # Authors
 Scott Li (gli65@uclive.ac.nz), Sam Heslip (she119@uclive.ac.nz)
