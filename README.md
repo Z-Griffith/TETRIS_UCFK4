@@ -9,8 +9,7 @@ ENCE260 UCFK4 Assignment
 ```
 # Aim Of Game
 ```Bash
-In Tetris, players must complete lines by moving differently shaped pieces (tetrominoes), which descend onto the playing field. The completed lines disappear and grant the player points, and the player can proceed to fill the vacated spaces. The game ends when the playing field is filled. 
-```
+In Tetris, players must complete lines by moving differently shaped pieces (tetrominoes), which descend onto the playing field. The completed lines are send to the other player to make their life hard and the player can proceed to fill the vacated spaces. The game ends when the playing field is overloaded with Tetronimos. ``
 
 # Authors
 Scott Li (gli65@uclive.ac.nz), Sam Heslip (she119@uclive.ac.nz)
@@ -29,7 +28,7 @@ Run `make program` to start playing!
 
 # How to play game
 
-## `7` Tetronimo model
+## `7` Tetromino model
 1. Four length `'+'`  ![+ ship](resources/+.png)
 2. Four length `'S'`  ![S ship](resources/S.png)
 3. Four length `'Z'`  ![Z ship](resources/Z.png)
