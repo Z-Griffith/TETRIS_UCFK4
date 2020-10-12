@@ -26,13 +26,13 @@ Run `make program` to start playing!
 # How to play game
 
 ## `7` Tetronimo model
-1. Four length `'+'` ship ![+ ship](resources/O_ship.PNG)
-2. Four length `'S'` ship ![S ship](resources/O_ship.PNG)
-3. Four length `'Z'` ship ![Z ship](resources/O_ship.PNG)
-4. Three length `'L'` ship ![L ship](resources/L_ship.PNG)
-5. Three length `'T'` ship ![T ship](resources/L_ship.PNG)
-6. Three length `'I'` ship ![I ship](resources/I_ship.PNG)
-7. Two length `'i'` ship ![i ship](resources/i_ships.PNG)
+1. Four length `'+'` ship ![+ ship](resources/+.PNG)
+2. Four length `'S'` ship ![S ship](resources/S.PNG)
+3. Four length `'Z'` ship ![Z ship](resources/Z.PNG)
+4. Three length `'L'` ship ![L ship](resources/L.PNG)
+5. Three length `'T'` ship ![T ship](resources/T.PNG)
+6. Three length `'I'` ship ![I ship](resources/I.PNG)
+7. Two length `'i'` ship ![i ship](resources/i.PNG)
 
 - `1`.**Start The Game**:  Firstly, The display shows `'BATTLESHIPS'` (It means the game has started). Next, it will show `'Push to connect'` Now A player can click the button (the white switch near R7) down to be a player 1 other is player 2.
 - `2`.**Placing The Ships**: From the loading screen, press the button to begin placing your ships. Use the nav switch to move your ship around the board, and use the button to rotate ships 90 degrees. Place ships by pressing the button (the white switch near R7) down. Once all ships have been placed,  it will automatically go the next step.
