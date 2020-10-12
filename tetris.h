@@ -63,6 +63,7 @@ int isPointWithinGrid(tinygl_point_t);
 /* Draws the bitmap patterns of the landed tetronimos to the screen using tinygl */
 void drawBitmap(uint8_t*);
 
+
 /* Shifts the rows of the bitmap downwards when a line is cleared */
 void shiftBitmap(uint8_t*, int);
 

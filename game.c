@@ -15,8 +15,9 @@
 #include "../fonts/font5x7_1.h"
 
 #define LOOP_RATE 300
-#define gameTick_RATE 1
+#define GAME_RATE 1
 #define MESSAGE_RATE 15
+
 
 /* Defines the game states */
 typedef enum game_state_t
@@ -177,7 +178,7 @@ int main(void)
                 checkButton(activeTetronimo, bitmap);
 
                 gameTick++;
-                if (gameTick > LOOP_RATE / gameTick_RATE) {
+                if (gameTick > LOOP_RATE / GAME_RATE) {
                     gameTick = 0;
 
                     if (hasTetronimoLanded(activeTetronimo, bitmap)) {

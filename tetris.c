@@ -239,11 +239,14 @@ void reset(Tetronimo** tetr, uint8_t* bitmap) {
 /* Adds a broken line to the bottom of the bitmap */
 void addLine(uint8_t* bitmap)
 {
+    // Shuffle upwards
     for (int iRow = 0; iRow < 6; iRow++) {
         *(bitmap + iRow) = bitmap[iRow+1];
     }
 
-    *(bitmap + 6) = 0x15;
+    // Add new line
+    //*(bitmap + 6) = 0x15; // Not randomly
+    *(bitmap + 6) = rand() % 0b11111;
 }
 
 
