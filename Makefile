@@ -1,7 +1,7 @@
 # File:   Makefile
-# Author: S. A. Heslip 
-# Date:   21 Sep 2020
-# Descr:  Makefile for tetris game
+# Author: S. Heslip (she119), S. Li (gli65)
+# Date:   12 Oct 2020
+# Descr:  Makefile for ufck4 tetris game
 
 # Definitions.
 CC = avr-gcc
@@ -24,10 +24,10 @@ ir_uart.o: ../../drivers/avr/ir_uart.c ../../drivers/avr/delay.h ../../drivers/a
 
 tetris.o: tetris.c ../../drivers/avr/system.h ../../utils/tinygl.h
 	$(CC) -c $(CFLAGS) $< -o $@
-	
+
 timer0.o: ../../drivers/avr/timer0.c ../../drivers/avr/bits.h ../../drivers/avr/prescale.h ../../drivers/avr/system.h ../../drivers/avr/timer0.h
 	$(CC) -c $(CFLAGS) $< -o $@
-	
+
 usart1.o: ../../drivers/avr/usart1.c ../../drivers/avr/system.h ../../drivers/avr/usart1.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
@@ -77,7 +77,7 @@ game.out: game.o tetris.o pio.o system.o timer.o button.o display.o led.o ledmat
 
 # Target: clean project.
 .PHONY: clean
-clean: 
+clean:
 	-$(DEL) *.o *.out *.hex
 
 

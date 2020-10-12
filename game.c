@@ -100,20 +100,21 @@ bool recieveConnect(void)
 /* Main game loop */
 int main(void)
 {
+    /* Initialise modules */
     system_init();
     led_init();
     ir_uart_init();
     button_init ();
     navswitch_init ();
     pacer_init (LOOP_RATE);
-
     tinygl_font_set(&font5x7_1);
     tinygl_init(LOOP_RATE);
     tinygl_text_speed_set(MESSAGE_RATE);
     tinygl_text_mode_set(TINYGL_TEXT_MODE_SCROLL);
     tinygl_text_speed_set (20);
+    /* -----------------   */
 
-    // Fill all tetronimos with their associated values
+    // Fill tetronimos array with their associated values
     Tetronimo allTetronimos[] = {
         {{0,0}, 2, {{0,1}, {0,0}}},                 // Small I piece
         {{0,0}, 4, {{-1,0}, {-1,1}, {0,0}, {0,1}}}, // Square piece
@@ -124,20 +125,24 @@ int main(void)
         {{0,0}, 4, {{-1,1}, { 0,1}, {0,0}, {1,0}}}, // Z piece
     };
 
+    // Generate grid bitmap
     uint8_t bitmap[7] = {0};
 
+    // Generate new active Tetronimo
     Tetronimo* activeTetronimo;
     getNewTetronimo(&activeTetronimo, allTetronimos);
 
+    // Set initial game state
     game_state gameState = WAIT_FOR_CONNECT;
-    int isDisplayingMessage = false;
-    int nLinesCleared = 0;
 
-    int ledTick = 0;
-    int ledState = 0;
-    int ledRate = 4;
-    int gameTick = 0;
-    int playerScore = 0;
+    int isDisplayingMessage = false; // Track whether we should draw message this frame
+    int nLinesCleared = 0; // Number of lines cleared this frame
+    int ledTick = 0;    // Ticks since led last changes
+    int ledState = 0; // Keeps track of LED state
+    int ledRate = 4;  // Rate at which to flash LED
+    int gameTick = 0; // Ticks since game updated
+    int playerScore = 0; // Keeps track of number of times player has won
+    int playerLinesSent = 0; // Keeps track of number of lines sent in total
     while (1) {
         pacer_wait();
         switch (gameState) {
@@ -195,6 +200,7 @@ int main(void)
                 tinygl_clear();
                 drawBitmap(bitmap);
                 nLinesCleared = clearFullLines(bitmap);
+                playerLinesSent += nLinesCleared;
                 sendLines(nLinesCleared);
                 if (activeTetronimo) {
                     drawTetronimo(activeTetronimo);
@@ -206,8 +212,8 @@ int main(void)
                 // This player has lost the game
                 ledRate = 2;
                 tinygl_clear();
-                char buff1[22];
-                sprintf(buff1, " -You lose. Score:%d- ", playerScore);
+                char buff1[40];
+                sprintf(buff1, " -You lose. Wins:%d Lines sent:%d- ", playerScore, playerLinesSent);
                 tinygl_text(buff1);
                 ir_uart_putc(SEND_WIN);
                 gameState = RESET;
@@ -226,15 +232,14 @@ int main(void)
                 ledRate = 6;
                 tinygl_clear();
                 playerScore++;
-                char buff2[22];
-                sprintf(buff2, " -You win! Score:%d- ", playerScore);
+                char buff2[40];
+                sprintf(buff2, " -You win! Wins:%d Lines sent:%d- ", playerScore, playerLinesSent);
                 tinygl_text(buff2);
                 gameState = RESET;
                 break;
         }
 
         tinygl_update();
-
         ledTick++;
         if (ledTick > LOOP_RATE / ledRate) {
             ledTick = 0;

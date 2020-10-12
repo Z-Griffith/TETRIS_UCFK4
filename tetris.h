@@ -24,7 +24,7 @@ typedef struct Tetronimo_t {
     tinygl_point_t offsets[MAX_OFFSETS];
 } Tetronimo;
 
-/* Returns the absolute position of a point on a Tetronimo */
+/* Returns the grid position of a point on a Tetronimo */
 tinygl_point_t getGridPos(Tetronimo*, int);
 
 
