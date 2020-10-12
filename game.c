@@ -28,6 +28,15 @@ typedef enum game_state_t
     RESET
 } game_state;
 
+
+/* Defines the IR character messages */
+enum {
+    SEND_LINE = 'A',
+    SEND_WIN = 'W',
+    SEND_CONNECT_REQUEST = 'L'
+};
+
+
 /* Checks the left button for a press and rotates tetronimo  */
 void checkButton(Tetronimo* activeTetronimo, uint8_t* bitmap)
 {
@@ -59,7 +68,7 @@ void checkNavswitch(Tetronimo* activeTetronimo, uint8_t* bitmap)
 void sendLines(int nLines)
 {
     for (int line = 0; line < nLines; line++) {
-        ir_uart_putc('L');
+        ir_uart_putc(SEND_LINE);
     }
 
 }
@@ -68,7 +77,7 @@ void sendLines(int nLines)
 void sendConnect(void)
 {
     for (int i = 0; i < 3; i++) {
-        ir_uart_putc('C');
+        ir_uart_putc(SEND_CONNECT_REQUEST);
     }
 }
 
@@ -79,7 +88,7 @@ bool recieveConnect(void)
     bool isConnected = false;
     if (ir_uart_read_ready_p ()) {
         recieved = ir_uart_getc ();
-        if (recieved == 'C') {
+        if (recieved == SEND_CONNECT_REQUEST) {
             isConnected = true;
         }
     }
@@ -154,12 +163,12 @@ int main(void)
                 }
 
                 if (ir_uart_read_ready_p ()) {
-                    // Check for win or loss
+                    // Check for win or line sent
                     char recieved = ir_uart_getc ();
-                    if (recieved == 'W') {
+                    if (recieved == SEND_WIN) {
                         gameState = GAME_WIN;
                     }
-                    if (recieved == 'L') {
+                    if (recieved == SEND_LINE) {
                         addLine(bitmap);
                     }
                 }
@@ -196,7 +205,7 @@ int main(void)
                 ledRate = 2;
                 tinygl_clear();
                 tinygl_text(" You lose! ");
-                ir_uart_putc('W');
+                ir_uart_putc(SEND_WIN);
                 gameState = RESET;
                 break;
 
