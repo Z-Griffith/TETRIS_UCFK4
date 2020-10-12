@@ -9,10 +9,10 @@ ENCE260 UCFK4 Assignment
 ```
 # Aim Of Game
 ```Bash
-In Tetris, players must complete lines by moving differently shaped pieces (tetrominoes), 
-which descend onto the playing field. The completed lines are send to the other player 
-to make their life hard and the player can proceed to fill the vacated spaces. 
-The game ends when the playing field is overloaded with Tetronimos. 
+In this UCFK4 Tetris game, players must complete lines by moving differently shaped pieces (Tetrominoes), 
+which descend onto the playing field. When rows are completed they are erased from the players field and also
+sent to the other player as scrambled lines to make their life hard. Each player must work to force their
+opponents field to be overrun with Tetronimos; doing so will grant the surviving player a win!
 ```
 
 # Authors
