@@ -4,6 +4,7 @@
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "system.h"
 #include "button.h"
 #include "navswitch.h"
@@ -11,8 +12,8 @@
 #include "tinygl.h"
 #include "pacer.h"
 #include "ir_uart.h"
-#include "tetris.h"
 #include "../fonts/font5x7_1.h"
+#include "tetris.h"
 
 #define LOOP_RATE 300
 #define GAME_RATE 1
@@ -136,6 +137,7 @@ int main(void)
     int ledState = 0;
     int ledRate = 4;
     int gameTick = 0;
+    int playerScore = 0;
     while (1) {
         pacer_wait();
         switch (gameState) {
@@ -143,7 +145,7 @@ int main(void)
                 // Establish IR connection
                 if (!isDisplayingMessage) {
                     isDisplayingMessage = 1;
-                    tinygl_text(" Push right button to start ");
+                    tinygl_text(" -Push nav button to start- ");
                 }
                 navswitch_update();
                 if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
@@ -168,8 +170,7 @@ int main(void)
                     char recieved = ir_uart_getc ();
                     if (recieved == SEND_WIN) {
                         gameState = GAME_WIN;
-                    }
-                    if (recieved == SEND_LINE) {
+                    } else if (recieved == SEND_LINE) {
                         addLine(bitmap);
                     }
                 }
@@ -205,7 +206,9 @@ int main(void)
                 // This player has lost the game
                 ledRate = 2;
                 tinygl_clear();
-                tinygl_text(" You lose! ");
+                char buff1[22];
+                sprintf(buff1, " -You lose. Score:%d- ", playerScore);
+                tinygl_text(buff1);
                 ir_uart_putc(SEND_WIN);
                 gameState = RESET;
                 break;
@@ -222,7 +225,10 @@ int main(void)
                 // This player has won the game
                 ledRate = 6;
                 tinygl_clear();
-                tinygl_text(" You win! ");
+                playerScore++;
+                char buff2[22];
+                sprintf(buff2, " -You win! Score:%d- ", playerScore);
+                tinygl_text(buff2);
                 gameState = RESET;
                 break;
         }
