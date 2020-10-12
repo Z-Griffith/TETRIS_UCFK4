@@ -96,9 +96,6 @@ int main(void)
     navswitch_init ();
     pacer_init (LOOP_RATE);
 
-    int led_gameState = 1;
-    led_set(LED1, led_gameState);
-
     tinygl_font_set(&font5x7_1);
     tinygl_init(LOOP_RATE);
     tinygl_text_speed_set(MESSAGE_RATE);
@@ -126,6 +123,8 @@ int main(void)
     int nLinesCleared = 0;
 
     int ledTick = 0;
+    int ledState = 0;
+    int ledRate = 4;
     int gameTick = 0;
     while (1) {
         pacer_wait();
@@ -134,7 +133,7 @@ int main(void)
                 // Establish IR connection
                 if (!isDisplayingMessage) {
                     isDisplayingMessage = 1;
-                    tinygl_text(" Push right button to connect ");
+                    tinygl_text(" Push right button to start ");
                 }
                 navswitch_update();
                 if (navswitch_push_event_p(NAVSWITCH_PUSH)) {
@@ -148,6 +147,8 @@ int main(void)
 
             case GAME_RUN :
                 // Run game logic
+                ledState = 4;
+
                 if (activeTetronimo == NULL) {
                     getNewTetronimo(&activeTetronimo, allTetronimos);
                 }
@@ -169,8 +170,6 @@ int main(void)
                 gameTick++;
                 if (gameTick > LOOP_RATE / gameTick_RATE) {
                     gameTick = 0;
-                    led_gameState = !led_gameState;
-                    led_set(LED1, led_gameState);
 
                     if (hasTetronimoLanded(activeTetronimo, bitmap)) {
                         if (checkGameOver(activeTetronimo)) {
@@ -194,8 +193,9 @@ int main(void)
 
             case GAME_LOSS :
                 // This player has lost the game
+                ledRate = 2;
                 tinygl_clear();
-                tinygl_text("You lose!");
+                tinygl_text(" You lose! ");
                 ir_uart_putc('W');
                 gameState = RESET;
                 break;
@@ -210,13 +210,20 @@ int main(void)
 
             case GAME_WIN :
                 // This player has won the game
+                ledRate = 6;
                 tinygl_clear();
-                tinygl_text("You win!");
+                tinygl_text(" You win! ");
                 gameState = RESET;
                 break;
         }
 
         tinygl_update();
 
+        ledTick++;
+        if (ledTick > LOOP_RATE / ledRate) {
+            ledTick = 0;
+            ledState = !ledState;
+        }
+        led_set(LED1, ledState);
     }
 }

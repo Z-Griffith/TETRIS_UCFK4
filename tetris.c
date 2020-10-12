@@ -66,16 +66,18 @@ void rotateTetronimo(Tetronimo* tetr, uint8_t* bitmap, int isClockwise)
         } else {
             newOffset = tinygl_point((tetr->offsets[i]).y, -(tetr->offsets[i]).x);
         }
+
         temp.offsets[i] = newOffset;
         if (isPointOccupied(bitmap, getGridPos(&temp, i))) {
+            // If this new offset is occupied, cancel this whole rotation
             isValidRotation = 0;
             break;
         }
     }
 
     if (isValidRotation) {
+        // Save new offsets to Tetronimo
         for (int i = 0; i < tetr->nOffsets; i++) {
-
             tetr->offsets[i] = temp.offsets[i];
         }
 
