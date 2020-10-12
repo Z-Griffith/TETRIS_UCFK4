@@ -2,10 +2,10 @@
 ENCE260 UCFK4 Assignment
 
 # Game
-## ![Battleships Logo](resources/logo.png) 
-## BATTLESHIPS
+## ![Tetris Logo](resources/logo.png) 
+## TETRIS
 ```Bash
-1. A 2-player battleships game developed to run on the UCFK4 micro-controller.
+1. A 2-player TETRIS game developed to run on the UCFK4 micro-controller.
 ```
 
 # Authors
@@ -25,12 +25,15 @@ Run `make program` to start playing!
 
 # How to play game
 
-## 4 ship models
-1. Three length `'L'` ship ![L ship](resources/L_ship.PNG)
-2. Three length `'I'` ship ![I ship](resources/I_ship.PNG)
-3. Two length `'i'` ship ![i ship](resources/i_ships.PNG)
-4. One length `'O'` ship ![O ship](resources/O_ship.PNG)
-- `There are 5 ships in total, 1 L, 1 I, 1 i, 2 O ship.`
+## 7 Tetronimo model
+1. Four length `'+'` ship ![+ ship](resources/O_ship.PNG)
+2. Four length `'S'` ship ![S ship](resources/O_ship.PNG)
+3. Four length `'Z'` ship ![Z ship](resources/O_ship.PNG)
+4. Three length `'L'` ship ![L ship](resources/L_ship.PNG)
+5. Three length `'T'` ship ![T ship](resources/L_ship.PNG)
+6. Three length `'I'` ship ![I ship](resources/I_ship.PNG)
+7. Two length `'i'` ship ![i ship](resources/i_ships.PNG)
+
 - `1`.**Start The Game**:  Firstly, The display shows `'BATTLESHIPS'` (It means the game has started). Next, it will show `'Push to connect'` Now A player can click the button (the white switch near R7) down to be a player 1 other is player 2.
 - `2`.**Placing The Ships**: From the loading screen, press the button to begin placing your ships. Use the nav switch to move your ship around the board, and use the button to rotate ships 90 degrees. Place ships by pressing the button (the white switch near R7) down. Once all ships have been placed,  it will automatically go the next step.
 - `3`.**Wait For Player Turn**: The player 1 display shows `'Your turn'` and The player 2 display shows `'waiting for hit..'` or `'Opponents turn'`, The player 1 to do the step 4. and player 2 waiting for player 1 and then is plyer 2 turn to hit.
